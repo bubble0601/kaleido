@@ -1,0 +1,54 @@
+{
+  "name": "kaleido",
+  "version": "0.1.0",
+  "description": "Monaco-based local web diff viewer with real TypeScript hover, lint diagnostics, comments and review marks",
+  "type": "module",
+  "bin": {
+    "kaleido": "./dist/cli/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "dev": "node scripts/dev.js",
+    "build": "pnpm run build:server && pnpm run build:client",
+    "build:server": "tsup",
+    "build:client": "vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.client.json",
+    "start": "pnpm run build && node dist/cli/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@hono/node-server": "^2.1.0",
+    "@hono/zod-validator": "^0.9.0",
+    "@parcel/watcher": "^2.6.0",
+    "@tanstack/react-query": "^5.101.4",
+    "commander": "^15.0.0",
+    "env-paths": "^4.0.0",
+    "hono": "^4.13.1",
+    "monaco-editor": "^0.56.0",
+    "nanoid": "^6.0.1",
+    "open": "^11.0.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "simple-git": "^3.36.0",
+    "typescript": "~5.9.0",
+    "zod": "^4.4.3",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.1.2",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.0.5",
+    "tailwindcss": "^4.3.3",
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.10",
+    "vite": "^8.2.1"
+  }
+}
