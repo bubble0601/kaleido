@@ -18,9 +18,11 @@ export function CommentCard({
   const [isCopied, setIsCopied] = useState(false);
 
   const lineLabel =
-    comment.startLine === comment.endLine
-      ? `L${comment.startLine}`
-      : `L${comment.startLine}-${comment.endLine}`;
+    comment.startLine === undefined
+      ? 'File'
+      : comment.startLine === comment.endLine
+        ? `L${comment.startLine}`
+        : `L${comment.startLine}-${comment.endLine}`;
 
   if (isEditing) {
     return (

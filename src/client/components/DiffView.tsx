@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import type {
-  Comment,
-  CommentSide,
-  Diagnostic,
-  DiffFileMeta,
-  FileContentResponse,
-  RangeSpec,
+import {
+  isFileLevelComment,
+  type Comment,
+  type CommentSide,
+  type Diagnostic,
+  type DiffFileMeta,
+  type FileContentResponse,
+  type RangeSpec,
 } from '../../shared/types';
 import { setDiagnosticMarkers } from '../monaco/markers';
 import { getOrCreateModel } from '../monaco/models';
@@ -49,8 +50,8 @@ interface DiffViewProps {
   comments: Comment[];
   onCreateComment: (params: {
     side: CommentSide;
-    startLine: number;
-    endLine: number;
+    startLine?: number;
+    endLine?: number;
     body: string;
     codeSnapshot?: string;
   }) => void;
@@ -234,7 +235,7 @@ export function DiffView({
     if (!model) return [];
 
     const items: ZoneItem[] = comments
-      .filter((c) => c.path === file.path && c.side === side)
+      .filter((c) => c.path === file.path && !isFileLevelComment(c) && c.side === side)
       .map((c) => {
         const anchored = anchorComment(model, c);
         return {

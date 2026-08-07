@@ -105,8 +105,9 @@ export interface Comment {
   id: string;
   path: string;
   side: CommentSide;
-  startLine: number;
-  endLine: number;
+  /** 省略時はファイル全体へのコメント */
+  startLine?: number;
+  endLine?: number;
   body: string;
   /** 作成時点の対象行テキスト (範囲切替後の参照用) */
   codeSnapshot?: string;
@@ -117,10 +118,14 @@ export interface Comment {
 export interface CommentCreateRequest {
   path: string;
   side: CommentSide;
-  startLine: number;
-  endLine: number;
+  startLine?: number;
+  endLine?: number;
   body: string;
   codeSnapshot?: string;
+}
+
+export function isFileLevelComment(comment: { startLine?: number }): boolean {
+  return comment.startLine === undefined;
 }
 
 export interface ViewedState {

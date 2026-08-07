@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { CommentCard, CommentForm } from './components/comments/CommentWidgets';
 import { DiffView } from './components/DiffView';
 import { FileTree } from './components/FileTree';
 import { Toolbar } from './components/Toolbar';
 import { useDiff, useFileContent, useLint, useMeta, useTsDiagnostics } from './hooks/queries';
+import { isFileLevelComment } from '../shared/types';
 import { computeViewedPaths, useComments, useViewed } from './hooks/review';
 import { useSse } from './hooks/useSse';
 import { RangeSelector } from './components/RangeSelector';
@@ -50,6 +52,9 @@ export function App() {
     syncUrl(range, selectedPath);
   }, [range, selectedPath]);
 
+  const [isFileCommentOpen, setIsFileCommentOpen] = useState(false);
+  useEffect(() => setIsFileCommentOpen(false), [selectedPath, range]);
+
   const contents = useFileContent(range, selectedFile);
   const tsDiagnostics = useTsDiagnostics(selectedFile, contents.data);
   const lint = useLint(range, files);
@@ -61,6 +66,10 @@ export function App() {
 
   const { query: commentsQuery, create, update, remove } = useComments(range);
   const comments = useMemo(() => commentsQuery.data ?? [], [commentsQuery.data]);
+  const fileLevelComments = useMemo(
+    () => comments.filter((c) => selectedFile && c.path === selectedFile.path && isFileLevelComment(c)),
+    [comments, selectedFile],
+  );
 
   const { query: viewedQuery, toggle: toggleViewed } = useViewed();
   const viewedPaths = useMemo(
@@ -101,8 +110,8 @@ export function App() {
   const handleCreateComment = useCallback(
     (params: {
       side: 'original' | 'modified';
-      startLine: number;
-      endLine: number;
+      startLine?: number;
+      endLine?: number;
       body: string;
       codeSnapshot?: string;
     }) => {
@@ -154,7 +163,45 @@ export function App() {
             />
           )}
         </aside>
-        <main className="min-w-0 flex-1">
+        <main className="flex min-w-0 flex-1 flex-col">
+          {selectedFile && (
+            <div className="flex h-8 shrink-0 items-center gap-2 border-b border-neutral-800 bg-neutral-900/60 px-3 text-xs">
+              <span className="truncate font-mono text-neutral-300" title={selectedFile.path}>
+                {selectedFile.path}
+              </span>
+              <div className="flex-1" />
+              <button
+                type="button"
+                className="rounded border border-neutral-700 bg-neutral-800 px-2 py-0.5 text-[11px] text-neutral-300 hover:bg-neutral-700"
+                title="Comment on the whole file"
+                onClick={() => setIsFileCommentOpen(true)}
+              >
+                + File comment
+              </button>
+            </div>
+          )}
+          {selectedFile && (isFileCommentOpen || fileLevelComments.length > 0) && (
+            <div className="max-h-64 shrink-0 overflow-y-auto border-b border-neutral-800 bg-neutral-900/40 py-1">
+              {fileLevelComments.map((comment) => (
+                <CommentCard
+                  key={comment.id}
+                  comment={comment}
+                  onUpdate={handleUpdateComment}
+                  onDelete={handleDeleteComment}
+                />
+              ))}
+              {isFileCommentOpen && (
+                <CommentForm
+                  onSubmit={(body) => {
+                    handleCreateComment({ side: 'modified', body });
+                    setIsFileCommentOpen(false);
+                  }}
+                  onCancel={() => setIsFileCommentOpen(false)}
+                />
+              )}
+            </div>
+          )}
+          <div className="min-h-0 flex-1">
           {selectedFile && range && (selectedFile.isBinary || contents.data) ? (
             <DiffView
               range={range}
@@ -172,6 +219,7 @@ export function App() {
           ) : (
             <Centered>{files.length === 0 ? 'No changes to show' : 'Loading file…'}</Centered>
           )}
+          </div>
         </main>
       </div>
     </div>

@@ -112,14 +112,19 @@ export function createApp(ctx: AppContext): Hono {
     },
   );
 
-  const commentBodySchema = z.object({
-    path: z.string().min(1),
-    side: z.enum(['original', 'modified']),
-    startLine: z.number().int().min(1),
-    endLine: z.number().int().min(1),
-    body: z.string().min(1),
-    codeSnapshot: z.string().optional(),
-  });
+  const commentBodySchema = z
+    .object({
+      path: z.string().min(1),
+      side: z.enum(['original', 'modified']),
+      // startLine/endLine 省略時はファイル全体へのコメント
+      startLine: z.number().int().min(1).optional(),
+      endLine: z.number().int().min(1).optional(),
+      body: z.string().min(1),
+      codeSnapshot: z.string().optional(),
+    })
+    .refine((v) => (v.startLine === undefined) === (v.endLine === undefined), {
+      message: 'startLine and endLine must be provided together',
+    });
 
   app.get('/api/comments', zValidator('query', rangeSchema), (c) => {
     return c.json(ctx.reviewStore.getComments(rangeKey(toRange(c.req.valid('query')))));
