@@ -19,7 +19,13 @@ kaleido working             # unstaged changes (index vs working tree)
 kaleido staged              # staged changes (HEAD vs index)
 kaleido <commit>            # そのコミットの diff (<commit>^ vs <commit>)
 kaleido <target> <base>     # 任意の比較 (base vs target)
+
+kaleido comments [target] [base]   # 保存済みコメントを AI プロンプト形式で stdout に出力
+kaleido comments --json            # JSON で出力
 ```
+
+サーバー終了時 (Ctrl-C / 全タブクローズでの自動終了) にも、その範囲のコメントをターミナルに出力する。
+比較範囲と選択ファイルは URL クエリ (`?target=&base=&path=`) に同期されるため、リロード・共有できる。
 
 オプション:
 

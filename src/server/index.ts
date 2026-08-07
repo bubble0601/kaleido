@@ -17,6 +17,8 @@ export interface StartServerOptions {
   host: string;
   /** false の場合、全クライアント切断から5秒後にプロセスを終了する */
   isKeepAlive: boolean;
+  /** 自動終了時に呼ばれる (コメントのターミナル出力など)。未指定なら process.exit(0) */
+  onShutdown?: () => void;
 }
 
 export interface StartedServer {
@@ -28,6 +30,7 @@ export interface StartedServer {
 export async function startServer(options: StartServerOptions): Promise<StartedServer> {
   const ctx = createAppContext(options.repoRoot, options.initialRange, {
     isKeepAlive: options.isKeepAlive,
+    onShutdown: options.onShutdown,
   });
   const app = createApp(ctx);
 

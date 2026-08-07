@@ -9,7 +9,7 @@ export class EventBus {
   private clients = new Set<SseClient>();
   private shutdownTimer: NodeJS.Timeout | null = null;
 
-  constructor(private options: { isKeepAlive: boolean }) {}
+  constructor(private options: { isKeepAlive: boolean; onShutdown?: () => void }) {}
 
   register(client: SseClient): void {
     this.clients.add(client);
@@ -25,7 +25,11 @@ export class EventBus {
       this.shutdownTimer = setTimeout(() => {
         if (this.clients.size === 0) {
           console.log('kaleido: all clients disconnected, shutting down');
-          process.exit(0);
+          if (this.options.onShutdown) {
+            this.options.onShutdown();
+          } else {
+            process.exit(0);
+          }
         }
       }, 5000);
     }

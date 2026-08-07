@@ -1,10 +1,22 @@
+import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { realpathSync } from 'node:fs';
 import { join } from 'node:path';
 
 import envPaths from 'env-paths';
 import { nanoid } from 'nanoid';
 
 import type { Comment, CommentCreateRequest, ViewedState } from '../../shared/types.js';
+
+export function computeRepoId(repoRoot: string): string {
+  return createHash('sha256').update(realpathSync(repoRoot)).digest('hex').slice(0, 16);
+}
+
+/** repoRoot から repoId を導出して ReviewStore を開く (CLI サブコマンド用) */
+export function openReviewStore(repoRoot: string): ReviewStore {
+  const realRoot = realpathSync(repoRoot);
+  return new ReviewStore(computeRepoId(realRoot), realRoot);
+}
 
 const STORE_VERSION = 1;
 

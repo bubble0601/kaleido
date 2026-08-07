@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import { realpathSync } from 'node:fs';
 
 import type { RangeSpec } from '../shared/types.js';
@@ -6,7 +5,7 @@ import { GitContent } from './git/content.js';
 import { GitDiff } from './git/diff.js';
 import { GitRefs } from './git/refs.js';
 import { EventBus } from './events.js';
-import { ReviewStore } from './store/reviewStore.js';
+import { computeRepoId, ReviewStore } from './store/reviewStore.js';
 import { TsService } from './ts/service.js';
 
 export interface AppContext {
@@ -24,10 +23,10 @@ export interface AppContext {
 export function createAppContext(
   repoRoot: string,
   initialRange: RangeSpec,
-  options: { isKeepAlive: boolean },
+  options: { isKeepAlive: boolean; onShutdown?: () => void },
 ): AppContext {
   const realRoot = realpathSync(repoRoot);
-  const repoId = createHash('sha256').update(realRoot).digest('hex').slice(0, 16);
+  const repoId = computeRepoId(realRoot);
   return {
     repoRoot: realRoot,
     repoId,
@@ -37,6 +36,6 @@ export function createAppContext(
     gitRefs: new GitRefs(realRoot),
     tsService: new TsService(realRoot),
     reviewStore: new ReviewStore(repoId, realRoot),
-    eventBus: new EventBus({ isKeepAlive: options.isKeepAlive }),
+    eventBus: new EventBus({ isKeepAlive: options.isKeepAlive, onShutdown: options.onShutdown }),
   };
 }
