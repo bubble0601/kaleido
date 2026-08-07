@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { DiffView } from './components/DiffView';
 import { FileTree } from './components/FileTree';
@@ -9,6 +9,7 @@ import { useSse } from './hooks/useSse';
 import { RangeSelector } from './components/RangeSelector';
 import { useUiStore } from './state/store';
 import { copyToClipboard, formatAllCommentsPrompt } from './utils/commentFormat';
+import { getInitialUrlPath, getInitialUrlRange, syncUrl } from './utils/urlState';
 
 export function App() {
   const meta = useMeta();
@@ -17,7 +18,7 @@ export function App() {
 
   useEffect(() => {
     if (meta.data && !range) {
-      setRange(meta.data.initialRange);
+      setRange(getInitialUrlRange() ?? meta.data.initialRange);
     }
   }, [meta.data, range, setRange]);
 
@@ -29,12 +30,25 @@ export function App() {
     [files, selectedPath],
   );
 
-  // 初期選択とファイル消滅時のフォールバック
+  // 初期選択 (初回は URL の path を優先) とファイル消滅時のフォールバック
+  const hasRestoredUrlPathRef = useRef(false);
   useEffect(() => {
-    if (files.length > 0 && !selectedFile) {
-      setSelectedPath(files[0]!.path);
+    if (files.length === 0 || selectedFile) return;
+    if (!hasRestoredUrlPathRef.current) {
+      hasRestoredUrlPathRef.current = true;
+      const urlPath = getInitialUrlPath();
+      if (urlPath && files.some((f) => f.path === urlPath)) {
+        setSelectedPath(urlPath);
+        return;
+      }
     }
+    setSelectedPath(files[0]!.path);
   }, [files, selectedFile, setSelectedPath]);
+
+  // 範囲・選択ファイルを URL に反映 (リロード・共有用)
+  useEffect(() => {
+    syncUrl(range, selectedPath);
+  }, [range, selectedPath]);
 
   const contents = useFileContent(range, selectedFile);
   const tsDiagnostics = useTsDiagnostics(selectedFile, contents.data);
@@ -85,9 +99,15 @@ export function App() {
   }, [selectNext, selectedFile, toggleViewed, viewedPaths]);
 
   const handleCreateComment = useCallback(
-    (params: { startLine: number; endLine: number; body: string; codeSnapshot?: string }) => {
+    (params: {
+      side: 'original' | 'modified';
+      startLine: number;
+      endLine: number;
+      body: string;
+      codeSnapshot?: string;
+    }) => {
       if (!selectedFile) return;
-      create.mutate({ path: selectedFile.path, side: 'modified', ...params });
+      create.mutate({ path: selectedFile.path, ...params });
     },
     [create, selectedFile],
   );

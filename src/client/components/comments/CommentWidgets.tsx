@@ -5,10 +5,12 @@ import { copyToClipboard, formatCommentPrompt } from '../../utils/commentFormat'
 
 export function CommentCard({
   comment,
+  isOutdated = false,
   onUpdate,
   onDelete,
 }: {
   comment: Comment;
+  isOutdated?: boolean;
   onUpdate: (id: string, body: string) => void;
   onDelete: (id: string) => void;
 }) {
@@ -38,6 +40,17 @@ export function CommentCard({
     <div className="mx-2 my-1.5 max-w-2xl rounded border border-neutral-700 bg-neutral-800/95 text-[13px]">
       <div className="flex items-center gap-2 border-b border-neutral-700/60 px-3 py-1 text-[11px] text-neutral-400">
         <span>{lineLabel}</span>
+        {comment.side === 'original' && (
+          <span className="rounded bg-red-900/60 px-1.5 py-px text-[10px] text-red-300">old</span>
+        )}
+        {isOutdated && (
+          <span
+            className="rounded bg-yellow-900/60 px-1.5 py-px text-[10px] text-yellow-300"
+            title="The commented code no longer matches the current content"
+          >
+            outdated
+          </span>
+        )}
         <span>{new Date(comment.createdAt).toLocaleString()}</span>
         <div className="flex-1" />
         <button
@@ -59,6 +72,11 @@ export function CommentCard({
           Delete
         </button>
       </div>
+      {isOutdated && comment.codeSnapshot && (
+        <pre className="overflow-x-auto border-b border-neutral-700/60 bg-neutral-900/60 px-3 py-1.5 font-mono text-[11px] text-neutral-500">
+          {comment.codeSnapshot}
+        </pre>
+      )}
       <div className="whitespace-pre-wrap px-3 py-2 text-neutral-200">{comment.body}</div>
     </div>
   );
