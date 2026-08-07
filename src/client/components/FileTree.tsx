@@ -1,6 +1,8 @@
+import { Icon } from '@iconify/react';
 import { useMemo, useState } from 'react';
 
 import type { DiffFileMeta, FileStatus } from '../../shared/types';
+import { getFileTypeIconName } from '../utils/fileTypeIcons';
 
 interface TreeDir {
   kind: 'dir';
@@ -137,6 +139,7 @@ function FileRow({ node, depth, ctx }: { node: TreeFile; depth: number; ctx: Tre
       onClick={() => onSelect(file.path)}
     >
       <span className={`w-3 shrink-0 text-center font-bold ${status.className}`}>{status.letter}</span>
+      <Icon icon={getFileTypeIconName(file.path)} className="size-4 shrink-0" aria-hidden />
       <span className="min-w-0 flex-1 truncate" title={file.path}>
         {node.name}
       </span>

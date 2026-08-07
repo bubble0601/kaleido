@@ -4,9 +4,11 @@ import { createRoot } from 'react-dom/client';
 
 import { App } from './App';
 import { registerServerHoverProvider } from './monaco/hoverProvider';
+import { registerIconCollections } from './utils/icons';
 import './index.css';
 
 registerServerHoverProvider();
+registerIconCollections();
 
 const queryClient = new QueryClient({
   defaultOptions: {
