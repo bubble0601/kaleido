@@ -58,8 +58,8 @@ export function createApp(ctx: AppContext): Hono {
         content: z.string().optional(),
       }),
     ),
-    (c) => {
-      return c.json(ctx.tsService.hover(c.req.valid('json')));
+    async (c) => {
+      return c.json(await ctx.tsService.hover(c.req.valid('json')));
     },
   );
 
@@ -82,8 +82,8 @@ export function createApp(ctx: AppContext): Hono {
         content: z.string().optional(),
       }),
     ),
-    (c) => {
-      return c.json(ctx.tsService.diagnostics(c.req.valid('json')));
+    async (c) => {
+      return c.json(await ctx.tsService.diagnostics(c.req.valid('json')));
     },
   );
 

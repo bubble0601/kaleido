@@ -6,7 +6,7 @@ import { GitDiff } from './git/diff.js';
 import { GitRefs } from './git/refs.js';
 import { EventBus } from './events.js';
 import { computeRepoId, ReviewStore } from './store/reviewStore.js';
-import { TsService } from './ts/service.js';
+import { TsWorkerClient } from './ts/workerClient.js';
 
 export interface AppContext {
   repoRoot: string;
@@ -15,7 +15,7 @@ export interface AppContext {
   gitDiff: GitDiff;
   gitContent: GitContent;
   gitRefs: GitRefs;
-  tsService: TsService;
+  tsService: TsWorkerClient;
   reviewStore: ReviewStore;
   eventBus: EventBus;
 }
@@ -34,7 +34,7 @@ export function createAppContext(
     gitDiff: new GitDiff(realRoot),
     gitContent: new GitContent(realRoot),
     gitRefs: new GitRefs(realRoot),
-    tsService: new TsService(realRoot),
+    tsService: new TsWorkerClient(realRoot),
     reviewStore: new ReviewStore(repoId, realRoot),
     eventBus: new EventBus({ isKeepAlive: options.isKeepAlive, onShutdown: options.onShutdown }),
   };

@@ -1,8 +1,12 @@
-import { execFileSync } from 'node:child_process';
-import { readFileSync, realpathSync } from 'node:fs';
+import { execFile } from 'node:child_process';
+import { realpathSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { resolve, sep } from 'node:path';
+import { promisify } from 'node:util';
 
 import type { FileContentResponse, FileSide, RangeSpec } from '../../shared/types.js';
+
+const execFileAsync = promisify(execFile);
 
 const MAX_BUFFER = 10 * 1024 * 1024;
 const MAX_CONTENT_BYTES = 2 * 1024 * 1024;
@@ -35,9 +39,10 @@ export class GitContent {
     const { range, resolvedBase, path, oldPath, status } = params;
     const refs = this.resolveSideRefs(range, resolvedBase);
 
-    const original =
-      status === 'added' ? null : this.readSide(refs.originalRef, oldPath ?? path);
-    const modified = status === 'deleted' ? null : this.readSide(refs.modifiedRef, path);
+    const [original, modified] = await Promise.all([
+      status === 'added' ? null : this.readSide(refs.originalRef, oldPath ?? path),
+      status === 'deleted' ? null : this.readSide(refs.modifiedRef, path),
+    ]);
 
     const isTooLarge = isTooLargeContent(original) || isTooLargeContent(modified);
     if (isTooLarge) {
@@ -50,9 +55,9 @@ export class GitContent {
     return { original, modified, isTooLarge: false };
   }
 
-  private readSide(ref: string, filepath: string): FileSide | null {
+  private async readSide(ref: string, filepath: string): Promise<FileSide | null> {
     try {
-      const buf = this.readBlob(ref, filepath);
+      const buf = await this.readBlob(ref, filepath);
       return { content: buf.toString('utf8'), ref };
     } catch {
       // untracked ファイルの original や、ref に存在しないパス
@@ -60,33 +65,36 @@ export class GitContent {
     }
   }
 
-  readBlob(ref: string, filepath: string): Buffer {
+  async readBlob(ref: string, filepath: string): Promise<Buffer> {
     if (ref === 'working') {
       const repoRoot = realpathSync(resolve(this.repoRoot));
       const abs = realpathSync(resolve(repoRoot, normalizeRelPath(filepath)));
       if (abs !== repoRoot && !abs.startsWith(`${repoRoot}${sep}`)) {
         throw new Error('File path outside repository');
       }
-      return readFileSync(abs);
+      return readFile(abs);
     }
 
     const rel = normalizeRelPath(filepath);
     if (ref === 'staged') {
-      return execFileSync('git', ['show', `:${rel}`], {
+      const { stdout } = await execFileAsync('git', ['show', `:${rel}`], {
         cwd: this.repoRoot,
         maxBuffer: MAX_BUFFER,
+        encoding: 'buffer',
       });
+      return stdout;
     }
 
-    const blobHash = execFileSync('git', ['rev-parse', `${ref}:${rel}`], {
-      cwd: this.repoRoot,
-      encoding: 'utf8',
-      maxBuffer: MAX_BUFFER,
-    }).trim();
-    return execFileSync('git', ['cat-file', 'blob', blobHash], {
+    const { stdout: hashOut } = await execFileAsync('git', ['rev-parse', `${ref}:${rel}`], {
       cwd: this.repoRoot,
       maxBuffer: MAX_BUFFER,
     });
+    const { stdout } = await execFileAsync('git', ['cat-file', 'blob', hashOut.trim()], {
+      cwd: this.repoRoot,
+      maxBuffer: MAX_BUFFER,
+      encoding: 'buffer',
+    });
+    return stdout;
   }
 }
 
