@@ -87,6 +87,14 @@ export function App() {
     [comments, selectedFile],
   );
 
+  const commentCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const comment of comments) {
+      counts.set(comment.path, (counts.get(comment.path) ?? 0) + 1);
+    }
+    return counts;
+  }, [comments]);
+
   const { query: viewedQuery, toggle: toggleViewed } = useViewed();
   const viewedPaths = useMemo(
     () => computeViewedPaths(files, viewedQuery.data?.entries),
@@ -177,6 +185,7 @@ export function App() {
               files={files}
               selectedPath={selectedPath}
               viewedPaths={viewedPaths}
+              commentCounts={commentCounts}
               onSelect={setSelectedPath}
               onToggleViewed={(file, isViewed) => toggleViewed.mutate({ file, isViewed })}
             />
@@ -200,7 +209,7 @@ export function App() {
             </div>
           )}
           {selectedFile && (isFileCommentOpen || fileLevelComments.length > 0) && (
-            <div className="max-h-64 shrink-0 overflow-y-auto border-b border-neutral-200 bg-neutral-50 py-1 dark:border-neutral-800 dark:bg-neutral-900/40">
+            <div className="max-h-64 shrink-0 overflow-y-auto border-b border-neutral-200 bg-neutral-50 px-2 py-1 dark:border-neutral-800 dark:bg-neutral-900/40">
               {fileLevelComments.map((comment) => (
                 <CommentCard
                   key={comment.id}

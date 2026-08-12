@@ -39,7 +39,7 @@ export function CommentCard({
   }
 
   return (
-    <div className="mx-2 my-1.5 max-w-2xl rounded border border-neutral-300 bg-white text-[13px] dark:border-neutral-700 dark:bg-neutral-800/95">
+    <div className="mb-1 mt-0.5 max-w-2xl rounded border border-neutral-300 bg-white text-[13px] dark:border-neutral-700 dark:bg-neutral-800/95">
       <div className="flex items-center gap-2 border-b border-neutral-200 px-3 py-1 text-[11px] text-neutral-500 dark:border-neutral-700/60 dark:text-neutral-400">
         <span>{lineLabel}</span>
         {comment.side === 'original' && (
@@ -103,7 +103,7 @@ export function CommentForm({
   };
 
   return (
-    <div className="mx-2 my-1.5 max-w-2xl rounded border border-blue-400 bg-white p-2 text-[13px] dark:border-blue-700/60 dark:bg-neutral-800/95">
+    <div className="mb-1 mt-0.5 max-w-2xl rounded border border-blue-400 bg-white p-2 text-[13px] dark:border-blue-700/60 dark:bg-neutral-800/95">
       <textarea
         autoFocus
         value={body}

@@ -48,6 +48,8 @@ export function EditorZones({ editor, items }: { editor: ICodeEditor | null; ite
         domNode.style.pointerEvents = 'auto';
         domNode.style.zIndex = '10';
         const inner = document.createElement('div');
+        // 子要素の margin を高さ計測 (offsetHeight) に含めるため BFC 化する
+        inner.style.overflow = 'hidden';
         domNode.appendChild(inner);
 
         const zone: IViewZone = {

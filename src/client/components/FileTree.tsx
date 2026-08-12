@@ -72,15 +72,17 @@ interface FileTreeProps {
   files: DiffFileMeta[];
   selectedPath: string | null;
   viewedPaths: Set<string>;
+  /** path → その範囲でのコメント数 */
+  commentCounts?: Map<string, number>;
   onSelect: (path: string) => void;
   onToggleViewed?: (file: DiffFileMeta, isViewed: boolean) => void;
 }
 
-export function FileTree({ files, selectedPath, viewedPaths, onSelect, onToggleViewed }: FileTreeProps) {
+export function FileTree({ files, selectedPath, viewedPaths, commentCounts, onSelect, onToggleViewed }: FileTreeProps) {
   const tree = useMemo(() => buildTree(files), [files]);
   return (
     <div className="overflow-y-auto py-1 text-[13px] leading-6">
-      <TreeLevel nodes={tree} depth={0} ctx={{ selectedPath, viewedPaths, onSelect, onToggleViewed }} />
+      <TreeLevel nodes={tree} depth={0} ctx={{ selectedPath, viewedPaths, commentCounts, onSelect, onToggleViewed }} />
     </div>
   );
 }
@@ -88,6 +90,7 @@ export function FileTree({ files, selectedPath, viewedPaths, onSelect, onToggleV
 interface TreeContext {
   selectedPath: string | null;
   viewedPaths: Set<string>;
+  commentCounts?: Map<string, number>;
   onSelect: (path: string) => void;
   onToggleViewed?: (file: DiffFileMeta, isViewed: boolean) => void;
 }
@@ -103,6 +106,24 @@ function TreeLevel({ nodes, depth, ctx }: { nodes: TreeNode[]; depth: number; ct
         ),
       )}
     </>
+  );
+}
+
+function CommentCountBadge({ count }: { count: number }) {
+  if (count === 0) return null;
+  return (
+    <span
+      className="inline-flex shrink-0 items-center gap-0.5 text-[10px] text-blue-500 dark:text-blue-400"
+      title={`${count} comment(s)`}
+    >
+      <svg viewBox="0 0 16 16" className="size-3 shrink-0" aria-hidden>
+        <path
+          d="M2 3.5A1.5 1.5 0 0 1 3.5 2h9A1.5 1.5 0 0 1 14 3.5v6a1.5 1.5 0 0 1-1.5 1.5H8.4L5 13.8V11H3.5A1.5 1.5 0 0 1 2 9.5z"
+          fill="currentColor"
+        />
+      </svg>
+      {count}
+    </span>
   );
 }
 
@@ -138,7 +159,7 @@ function DirRow({ node, depth, ctx }: { node: TreeDir; depth: number; ctx: TreeC
 }
 
 function FileRow({ node, depth, ctx }: { node: TreeFile; depth: number; ctx: TreeContext }) {
-  const { selectedPath, viewedPaths, onSelect, onToggleViewed } = ctx;
+  const { selectedPath, viewedPaths, commentCounts, onSelect, onToggleViewed } = ctx;
   const { file } = node;
   const status = STATUS_STYLE[file.status];
   const isSelected = selectedPath === file.path;
@@ -167,6 +188,7 @@ function FileRow({ node, depth, ctx }: { node: TreeFile; depth: number; ctx: Tre
       <span className="min-w-0 flex-1 truncate" title={file.path}>
         {node.name}
       </span>
+      <CommentCountBadge count={commentCounts?.get(file.path) ?? 0} />
       <span className={`w-3 shrink-0 text-center font-bold ${status.className}`}>{status.letter}</span>
     </div>
   );
