@@ -63,6 +63,14 @@ export function App() {
   const [isFileCommentOpen, setIsFileCommentOpen] = useState(false);
   useEffect(() => setIsFileCommentOpen(false), [selectedPath, range]);
 
+  // 新規ファイルは diff の左側が空で無駄なため、既定で File 表示にする。
+  // モードボタンで明示的に切り替えた場合はそのファイルに限り従う。
+  const [modeOverridePath, setModeOverridePath] = useState<string | null>(null);
+  const effectiveViewMode =
+    selectedFile?.status === 'added' && modeOverridePath !== selectedFile.path
+      ? 'file'
+      : viewMode;
+
   const contents = useFileContent(range, selectedFile);
   const tsDiagnostics = useTsDiagnostics(selectedFile, contents.data);
   const lint = useLint(range, files);
@@ -148,8 +156,11 @@ export function App() {
     <div className="flex h-full flex-col">
       <Toolbar
         rangeLabel={diff.data?.label ?? ''}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
+        viewMode={effectiveViewMode}
+        onViewModeChange={(mode) => {
+          setViewMode(mode);
+          setModeOverridePath(selectedPath);
+        }}
         viewedCount={viewedPaths.size}
         totalCount={files.length}
         commentCount={comments.length}
@@ -217,7 +228,7 @@ export function App() {
               contents={
                 contents.data ?? { original: null, modified: null, isTooLarge: false }
               }
-              viewMode={viewMode}
+              viewMode={effectiveViewMode}
               diagnostics={diagnostics}
               comments={comments}
               onCreateComment={handleCreateComment}
