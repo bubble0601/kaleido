@@ -39,15 +39,15 @@ export function CommentCard({
   }
 
   return (
-    <div className="mx-2 my-1.5 max-w-2xl rounded border border-neutral-700 bg-neutral-800/95 text-[13px]">
-      <div className="flex items-center gap-2 border-b border-neutral-700/60 px-3 py-1 text-[11px] text-neutral-400">
+    <div className="mx-2 my-1.5 max-w-2xl rounded border border-neutral-300 bg-white text-[13px] dark:border-neutral-700 dark:bg-neutral-800/95">
+      <div className="flex items-center gap-2 border-b border-neutral-200 px-3 py-1 text-[11px] text-neutral-500 dark:border-neutral-700/60 dark:text-neutral-400">
         <span>{lineLabel}</span>
         {comment.side === 'original' && (
-          <span className="rounded bg-red-900/60 px-1.5 py-px text-[10px] text-red-300">old</span>
+          <span className="rounded bg-red-100 px-1.5 py-px text-[10px] text-red-700 dark:bg-red-900/60 dark:text-red-300">old</span>
         )}
         {isOutdated && (
           <span
-            className="rounded bg-yellow-900/60 px-1.5 py-px text-[10px] text-yellow-300"
+            className="rounded bg-yellow-100 px-1.5 py-px text-[10px] text-yellow-700 dark:bg-yellow-900/60 dark:text-yellow-300"
             title="The commented code no longer matches the current content"
           >
             outdated
@@ -57,7 +57,7 @@ export function CommentCard({
         <div className="flex-1" />
         <button
           type="button"
-          className="hover:text-neutral-200"
+          className="hover:text-neutral-800 dark:hover:text-neutral-200"
           onClick={() => {
             void copyToClipboard(formatCommentPrompt(comment)).then(() => {
               setIsCopied(true);
@@ -67,19 +67,19 @@ export function CommentCard({
         >
           {isCopied ? 'Copied!' : 'Copy'}
         </button>
-        <button type="button" className="hover:text-neutral-200" onClick={() => setIsEditing(true)}>
+        <button type="button" className="hover:text-neutral-800 dark:hover:text-neutral-200" onClick={() => setIsEditing(true)}>
           Edit
         </button>
-        <button type="button" className="hover:text-red-400" onClick={() => onDelete(comment.id)}>
+        <button type="button" className="hover:text-red-600 dark:hover:text-red-400" onClick={() => onDelete(comment.id)}>
           Delete
         </button>
       </div>
       {isOutdated && comment.codeSnapshot && (
-        <pre className="overflow-x-auto border-b border-neutral-700/60 bg-neutral-900/60 px-3 py-1.5 font-mono text-[11px] text-neutral-500">
+        <pre className="overflow-x-auto border-b border-neutral-200 bg-neutral-100 px-3 py-1.5 font-mono text-[11px] text-neutral-500 dark:border-neutral-700/60 dark:bg-neutral-900/60">
           {comment.codeSnapshot}
         </pre>
       )}
-      <div className="whitespace-pre-wrap px-3 py-2 text-neutral-200">{comment.body}</div>
+      <div className="whitespace-pre-wrap px-3 py-2 text-neutral-800 dark:text-neutral-200">{comment.body}</div>
     </div>
   );
 }
@@ -103,13 +103,13 @@ export function CommentForm({
   };
 
   return (
-    <div className="mx-2 my-1.5 max-w-2xl rounded border border-blue-700/60 bg-neutral-800/95 p-2 text-[13px]">
+    <div className="mx-2 my-1.5 max-w-2xl rounded border border-blue-400 bg-white p-2 text-[13px] dark:border-blue-700/60 dark:bg-neutral-800/95">
       <textarea
         autoFocus
         value={body}
         rows={3}
         placeholder="Leave a comment… (⌘Enter to submit)"
-        className="w-full resize-y rounded border border-neutral-700 bg-neutral-900 px-2 py-1.5 text-neutral-200 outline-none focus:border-blue-600"
+        className="w-full resize-y rounded border border-neutral-300 bg-white px-2 py-1.5 text-neutral-800 outline-none focus:border-blue-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:focus:border-blue-600"
         onChange={(e) => setBody(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
@@ -123,7 +123,7 @@ export function CommentForm({
       <div className="mt-1.5 flex justify-end gap-2">
         <button
           type="button"
-          className="rounded px-2.5 py-1 text-xs text-neutral-400 hover:bg-neutral-700"
+          className="rounded px-2.5 py-1 text-xs text-neutral-500 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:bg-neutral-700"
           onClick={onCancel}
         >
           Cancel

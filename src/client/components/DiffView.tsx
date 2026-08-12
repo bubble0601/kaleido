@@ -298,7 +298,7 @@ export function DiffView({
         items={originalZoneItems}
       />
       {placeholderMessage && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#1e1e1e] text-sm text-neutral-500">
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white text-sm text-neutral-400 dark:bg-[#1e1e1e] dark:text-neutral-500">
           {placeholderMessage}
         </div>
       )}

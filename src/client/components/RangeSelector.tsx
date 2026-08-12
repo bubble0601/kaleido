@@ -57,13 +57,13 @@ export function RangeSelector({ current, onChange }: RangeSelectorProps) {
     <div ref={containerRef} className="relative">
       <button
         type="button"
-        className="rounded border border-neutral-700 bg-neutral-800 px-2.5 py-1 text-xs text-neutral-300 hover:bg-neutral-700"
+        className="rounded border border-neutral-300 bg-white px-2.5 py-1 text-xs text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
         onClick={() => setIsOpen(!isOpen)}
       >
         Compare ▾
       </button>
       {isOpen && (
-        <div className="absolute right-0 top-8 z-50 max-h-[70vh] w-96 overflow-y-auto rounded border border-neutral-700 bg-neutral-900 py-1 shadow-xl">
+        <div className="absolute right-0 top-8 z-50 max-h-[70vh] w-96 overflow-y-auto rounded border border-neutral-300 bg-white py-1 shadow-xl dark:border-neutral-700 dark:bg-neutral-900">
           <OptionGroup title="Quick" options={quickOptions} current={current} onSelect={select} />
           {branchOptions.length > 0 && (
             <OptionGroup title="Branches" options={branchOptions} current={current} onSelect={select} />
@@ -90,7 +90,7 @@ function OptionGroup({
 }) {
   return (
     <div className="py-1">
-      <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-500">
+      <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
         {title}
       </div>
       {options.map((option) => {
@@ -103,7 +103,9 @@ function OptionGroup({
             key={option.label}
             type="button"
             className={`block w-full truncate px-3 py-1 text-left text-xs ${
-              isActive ? 'bg-neutral-700 text-white' : 'text-neutral-300 hover:bg-neutral-800'
+              isActive
+                ? 'bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-white'
+                : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800'
             }`}
             title={option.label}
             onClick={() => onSelect(option)}

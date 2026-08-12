@@ -20,10 +20,10 @@ interface TreeFile {
 type TreeNode = TreeDir | TreeFile;
 
 const STATUS_STYLE: Record<FileStatus, { letter: string; className: string }> = {
-  added: { letter: 'A', className: 'text-green-500' },
-  deleted: { letter: 'D', className: 'text-red-500' },
-  modified: { letter: 'M', className: 'text-yellow-500' },
-  renamed: { letter: 'R', className: 'text-blue-400' },
+  added: { letter: 'A', className: 'text-green-600 dark:text-green-500' },
+  deleted: { letter: 'D', className: 'text-red-600 dark:text-red-500' },
+  modified: { letter: 'M', className: 'text-yellow-600 dark:text-yellow-500' },
+  renamed: { letter: 'R', className: 'text-blue-500 dark:text-blue-400' },
 };
 
 function buildTree(files: DiffFileMeta[]): TreeNode[] {
@@ -112,7 +112,7 @@ function DirRow({ node, depth, ctx }: { node: TreeDir; depth: number; ctx: TreeC
     <div>
       <button
         type="button"
-        className="flex w-full items-center gap-1 px-2 text-left text-neutral-400 hover:bg-neutral-800"
+        className="flex w-full items-center gap-1 px-2 text-left text-neutral-500 hover:bg-neutral-200/60 dark:text-neutral-400 dark:hover:bg-neutral-800"
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
         onClick={() => setIsOpen(!isOpen)}
       >
@@ -133,7 +133,9 @@ function FileRow({ node, depth, ctx }: { node: TreeFile; depth: number; ctx: Tre
   return (
     <div
       className={`group flex w-full cursor-pointer items-center gap-1.5 px-2 ${
-        isSelected ? 'bg-neutral-700/70' : 'hover:bg-neutral-800'
+        isSelected
+          ? 'bg-neutral-300/60 dark:bg-neutral-700/70'
+          : 'hover:bg-neutral-200/60 dark:hover:bg-neutral-800'
       } ${isViewed ? 'opacity-50' : ''}`}
       style={{ paddingLeft: `${depth * 12 + 8}px` }}
       onClick={() => onSelect(file.path)}
@@ -143,8 +145,6 @@ function FileRow({ node, depth, ctx }: { node: TreeFile; depth: number; ctx: Tre
       <span className="min-w-0 flex-1 truncate" title={file.path}>
         {node.name}
       </span>
-      <span className="shrink-0 text-[11px] text-green-600">+{file.additions}</span>
-      <span className="shrink-0 text-[11px] text-red-500">-{file.deletions}</span>
       {onToggleViewed && (
         <input
           type="checkbox"

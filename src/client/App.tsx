@@ -8,6 +8,7 @@ import { useDiff, useFileContent, useLint, useMeta, useTsDiagnostics } from './h
 import { isFileLevelComment } from '../shared/types';
 import { computeViewedPaths, useComments, useViewed } from './hooks/review';
 import { useSse } from './hooks/useSse';
+import { monaco } from './monaco/setup';
 import { RangeSelector } from './components/RangeSelector';
 import { useUiStore } from './state/store';
 import { copyToClipboard, formatAllCommentsPrompt } from './utils/commentFormat';
@@ -16,7 +17,14 @@ import { getInitialUrlPath, getInitialUrlRange, syncUrl } from './utils/urlState
 export function App() {
   const meta = useMeta();
   useSse();
-  const { range, selectedPath, viewMode, setRange, setSelectedPath, setViewMode } = useUiStore();
+  const { range, selectedPath, viewMode, theme, setRange, setSelectedPath, setViewMode } =
+    useUiStore();
+
+  // テーマを html クラスと Monaco に反映
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    monaco.editor.setTheme(theme === 'dark' ? 'vs-dark' : 'vs');
+  }, [theme]);
 
   useEffect(() => {
     if (meta.data && !range) {
@@ -150,9 +158,9 @@ export function App() {
         <RangeSelector current={range} onChange={setRange} />
       </Toolbar>
       <div className="flex min-h-0 flex-1">
-        <aside className="w-72 shrink-0 overflow-y-auto border-r border-neutral-800 bg-neutral-900">
+        <aside className="w-72 shrink-0 overflow-y-auto border-r border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900">
           {files.length === 0 ? (
-            <div className="p-4 text-sm text-neutral-500">No changes</div>
+            <div className="p-4 text-sm text-neutral-400 dark:text-neutral-500">No changes</div>
           ) : (
             <FileTree
               files={files}
@@ -165,14 +173,14 @@ export function App() {
         </aside>
         <main className="flex min-w-0 flex-1 flex-col">
           {selectedFile && (
-            <div className="flex h-8 shrink-0 items-center gap-2 border-b border-neutral-800 bg-neutral-900/60 px-3 text-xs">
-              <span className="truncate font-mono text-neutral-300" title={selectedFile.path}>
+            <div className="flex h-8 shrink-0 items-center gap-2 border-b border-neutral-200 bg-neutral-50 px-3 text-xs dark:border-neutral-800 dark:bg-neutral-900/60">
+              <span className="truncate font-mono text-neutral-600 dark:text-neutral-300" title={selectedFile.path}>
                 {selectedFile.path}
               </span>
               <div className="flex-1" />
               <button
                 type="button"
-                className="rounded border border-neutral-700 bg-neutral-800 px-2 py-0.5 text-[11px] text-neutral-300 hover:bg-neutral-700"
+                className="rounded border border-neutral-300 bg-white px-2 py-0.5 text-[11px] text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
                 title="Comment on the whole file"
                 onClick={() => setIsFileCommentOpen(true)}
               >
@@ -181,7 +189,7 @@ export function App() {
             </div>
           )}
           {selectedFile && (isFileCommentOpen || fileLevelComments.length > 0) && (
-            <div className="max-h-64 shrink-0 overflow-y-auto border-b border-neutral-800 bg-neutral-900/40 py-1">
+            <div className="max-h-64 shrink-0 overflow-y-auto border-b border-neutral-200 bg-neutral-50 py-1 dark:border-neutral-800 dark:bg-neutral-900/40">
               {fileLevelComments.map((comment) => (
                 <CommentCard
                   key={comment.id}
@@ -228,7 +236,7 @@ export function App() {
 
 function Centered({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-full items-center justify-center text-sm text-neutral-500">
+    <div className="flex h-full items-center justify-center text-sm text-neutral-400 dark:text-neutral-500">
       {children}
     </div>
   );
