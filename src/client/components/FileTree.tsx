@@ -2,7 +2,7 @@ import { Icon } from '@iconify/react';
 import { useMemo, useState } from 'react';
 
 import type { DiffFileMeta, FileStatus } from '../../shared/types';
-import { getFileTypeIconName } from '../utils/fileTypeIcons';
+import { FOLDER_ICON, FOLDER_OPENED_ICON, getFileTypeIconName } from '../utils/fileTypeIcons';
 
 interface TreeDir {
   kind: 'dir';
@@ -106,6 +106,18 @@ function TreeLevel({ nodes, depth, ctx }: { nodes: TreeNode[]; depth: number; ct
   );
 }
 
+function ChevronIcon({ isOpen }: { isOpen: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      className={`size-3 shrink-0 transition-transform ${isOpen ? 'rotate-90' : ''}`}
+      aria-hidden
+    >
+      <path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function DirRow({ node, depth, ctx }: { node: TreeDir; depth: number; ctx: TreeContext }) {
   const [isOpen, setIsOpen] = useState(true);
   return (
@@ -116,7 +128,8 @@ function DirRow({ node, depth, ctx }: { node: TreeDir; depth: number; ctx: TreeC
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span className="w-3 text-[10px]">{isOpen ? '▾' : '▸'}</span>
+        <ChevronIcon isOpen={isOpen} />
+        <Icon icon={isOpen ? FOLDER_OPENED_ICON : FOLDER_ICON} className="size-4 shrink-0" aria-hidden />
         <span className="truncate">{node.name}</span>
       </button>
       {isOpen && <TreeLevel nodes={node.children} depth={depth + 1} ctx={ctx} />}
@@ -140,11 +153,6 @@ function FileRow({ node, depth, ctx }: { node: TreeFile; depth: number; ctx: Tre
       style={{ paddingLeft: `${depth * 12 + 8}px` }}
       onClick={() => onSelect(file.path)}
     >
-      <span className={`w-3 shrink-0 text-center font-bold ${status.className}`}>{status.letter}</span>
-      <Icon icon={getFileTypeIconName(file.path)} className="size-4 shrink-0" aria-hidden />
-      <span className="min-w-0 flex-1 truncate" title={file.path}>
-        {node.name}
-      </span>
       {onToggleViewed && (
         <input
           type="checkbox"
@@ -155,6 +163,11 @@ function FileRow({ node, depth, ctx }: { node: TreeFile; depth: number; ctx: Tre
           onChange={(e) => onToggleViewed(file, e.target.checked)}
         />
       )}
+      <Icon icon={getFileTypeIconName(file.path)} className="size-4 shrink-0" aria-hidden />
+      <span className="min-w-0 flex-1 truncate" title={file.path}>
+        {node.name}
+      </span>
+      <span className={`w-3 shrink-0 text-center font-bold ${status.className}`}>{status.letter}</span>
     </div>
   );
 }

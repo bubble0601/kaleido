@@ -147,6 +147,9 @@ const TEST_ICON_BY_KIND: Record<string, string> = {
 
 const DEFAULT_FILE_ICON = 'vscode-icons:default-file';
 
+export const FOLDER_ICON = 'vscode-icons:default-folder';
+export const FOLDER_OPENED_ICON = 'vscode-icons:default-folder-opened';
+
 export function getFileTypeIconName(filepath: string): string {
   const basename = filepath.split('/').pop() ?? filepath;
   const lower = basename.toLowerCase();
