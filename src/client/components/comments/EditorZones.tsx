@@ -20,7 +20,9 @@ interface MountedZone {
 
 /**
  * Monaco の ViewZone に React 要素を describe する汎用マネージャ。
- * zone の高さは中身の実測値に追従させる (ResizeObserver → layoutZone)。
+ * - zone の高さは中身の実測値に追従させる (ResizeObserver → layoutZone)
+ * - zone はスクロール可能なコンテンツ幅いっぱいに広がるため、中身は
+ *   エディタの可視幅に固定し、横スクロールにも追従させる (translateX 相殺)
  */
 export function EditorZones({ editor, items }: { editor: ICodeEditor | null; items: ZoneItem[] }) {
   const mountedRef = useRef(new Map<string, MountedZone>());
@@ -72,6 +74,33 @@ export function EditorZones({ editor, items }: { editor: ICodeEditor | null; ite
     setPortalTargets(new Map([...mounted].map(([key, entry]) => [key, entry.inner])));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor, itemsSignature]);
+
+  // 可視幅の固定と横スクロール相殺
+  useEffect(() => {
+    if (!editor) return;
+    const applyLayout = () => {
+      const layout = editor.getLayoutInfo();
+      const visibleWidth = Math.max(
+        0,
+        layout.width - layout.contentLeft - layout.verticalScrollbarWidth,
+      );
+      const scrollLeft = editor.getScrollLeft();
+      for (const entry of mountedRef.current.values()) {
+        entry.inner.style.width = `${visibleWidth}px`;
+        entry.inner.style.transform = `translateX(${scrollLeft}px)`;
+      }
+    };
+    applyLayout();
+    const layoutListener = editor.onDidLayoutChange(applyLayout);
+    const scrollListener = editor.onDidScrollChange((e) => {
+      if (e.scrollLeftChanged) applyLayout();
+    });
+    return () => {
+      layoutListener.dispose();
+      scrollListener.dispose();
+    };
+  }, [editor, itemsSignature]);
+
 
   useEffect(() => {
     return () => {
