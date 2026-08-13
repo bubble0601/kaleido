@@ -10,6 +10,8 @@ const BUTTON_CLASS =
   'rounded border border-neutral-300 bg-white px-2.5 py-1 text-xs text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700';
 
 interface ToolbarProps {
+  isSidebarCollapsed?: boolean;
+  onToggleSidebar?: () => void;
   rangeLabel: string;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
@@ -20,7 +22,28 @@ interface ToolbarProps {
   children?: React.ReactNode;
 }
 
+function SidebarToggleIcon({ isCollapsed }: { isCollapsed: boolean }) {
+  return (
+    <svg viewBox="0 0 16 16" className="size-4" aria-hidden>
+      <rect
+        x="1.5"
+        y="2.5"
+        width="13"
+        height="11"
+        rx="1.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.2"
+      />
+      {!isCollapsed && <rect x="1.5" y="2.5" width="5" height="11" rx="1.5" fill="currentColor" />}
+      <line x1="6.5" y1="2.5" x2="6.5" y2="13.5" stroke="currentColor" strokeWidth="1.2" />
+    </svg>
+  );
+}
+
 export function Toolbar({
+  isSidebarCollapsed,
+  onToggleSidebar,
   rangeLabel,
   viewMode,
   onViewModeChange,
@@ -33,6 +56,16 @@ export function Toolbar({
   const { theme, setTheme } = useUiStore();
   return (
     <div className="flex h-10 shrink-0 items-center gap-3 border-b border-neutral-200 bg-neutral-100 px-3 dark:border-neutral-800 dark:bg-neutral-900">
+      {onToggleSidebar && (
+        <button
+          type="button"
+          className="rounded p-1 text-neutral-500 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:bg-neutral-700"
+          title={isSidebarCollapsed ? 'Show file tree (⌘B)' : 'Hide file tree (⌘B)'}
+          onClick={onToggleSidebar}
+        >
+          <SidebarToggleIcon isCollapsed={!!isSidebarCollapsed} />
+        </button>
+      )}
       <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">kaleido</span>
       <span className="truncate text-xs text-neutral-500 dark:text-neutral-400">{rangeLabel}</span>
       <div className="flex-1" />

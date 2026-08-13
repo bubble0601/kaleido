@@ -7,6 +7,7 @@ import { Toolbar } from './components/Toolbar';
 import { useDiff, useFileContent, useLint, useMeta, useTsDiagnostics } from './hooks/queries';
 import { isFileLevelComment } from '../shared/types';
 import { computeViewedPaths, useComments, useViewed } from './hooks/review';
+import { useSidebarResize } from './hooks/useSidebarResize';
 import { useSse } from './hooks/useSse';
 import { monaco } from './monaco/setup';
 import { RangeSelector } from './components/RangeSelector';
@@ -95,6 +96,8 @@ export function App() {
     return counts;
   }, [comments]);
 
+  const sidebar = useSidebarResize();
+
   const { query: viewedQuery, toggle: toggleViewed } = useViewed();
   const viewedPaths = useMemo(
     () => computeViewedPaths(files, viewedQuery.data?.entries),
@@ -118,6 +121,11 @@ export function App() {
       if (e.target instanceof HTMLElement && ['INPUT', 'TEXTAREA'].includes(e.target.tagName)) {
         return;
       }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
+        e.preventDefault();
+        sidebar.toggle();
+        return;
+      }
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.key === 'j') selectNext(1);
       if (e.key === 'k') selectNext(-1);
@@ -129,7 +137,7 @@ export function App() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [selectNext, selectedFile, toggleViewed, viewedPaths]);
+  }, [selectNext, selectedFile, toggleViewed, viewedPaths, sidebar]);
 
   const handleCreateComment = useCallback(
     (params: {
@@ -163,6 +171,8 @@ export function App() {
   return (
     <div className="flex h-full flex-col">
       <Toolbar
+        isSidebarCollapsed={sidebar.isCollapsed}
+        onToggleSidebar={sidebar.toggle}
         rangeLabel={diff.data?.label ?? ''}
         viewMode={effectiveViewMode}
         onViewModeChange={(mode) => {
@@ -177,20 +187,32 @@ export function App() {
         <RangeSelector current={range} onChange={setRange} />
       </Toolbar>
       <div className="flex min-h-0 flex-1">
-        <aside className="w-72 shrink-0 overflow-y-auto border-r border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900">
-          {files.length === 0 ? (
-            <div className="p-4 text-sm text-neutral-400 dark:text-neutral-500">No changes</div>
-          ) : (
-            <FileTree
-              files={files}
-              selectedPath={selectedPath}
-              viewedPaths={viewedPaths}
-              commentCounts={commentCounts}
-              onSelect={setSelectedPath}
-              onToggleViewed={(file, isViewed) => toggleViewed.mutate({ file, isViewed })}
-            />
-          )}
-        </aside>
+        {!sidebar.isCollapsed && (
+          <aside
+            style={{ width: sidebar.width }}
+            className="shrink-0 overflow-y-auto bg-neutral-50 dark:bg-neutral-900"
+          >
+            {files.length === 0 ? (
+              <div className="p-4 text-sm text-neutral-400 dark:text-neutral-500">No changes</div>
+            ) : (
+              <FileTree
+                files={files}
+                selectedPath={selectedPath}
+                viewedPaths={viewedPaths}
+                commentCounts={commentCounts}
+                onSelect={setSelectedPath}
+                onToggleViewed={(file, isViewed) => toggleViewed.mutate({ file, isViewed })}
+              />
+            )}
+          </aside>
+        )}
+        {/* リサイザ: ドラッグで幅調整、閾値以下で折り畳み、ダブルクリックでトグル (⌘B でも) */}
+        <div
+          className="w-1 shrink-0 cursor-col-resize border-l border-neutral-200 transition-colors hover:bg-blue-500/60 active:bg-blue-500/60 dark:border-neutral-800"
+          title="Drag to resize (double-click or ⌘B to toggle)"
+          onMouseDown={sidebar.startResize}
+          onDoubleClick={sidebar.toggle}
+        />
         <main className="flex min-w-0 flex-1 flex-col">
           {selectedFile && (
             <div className="flex h-8 shrink-0 items-center gap-2 border-b border-neutral-200 bg-neutral-50 px-3 text-xs dark:border-neutral-800 dark:bg-neutral-900/60">
