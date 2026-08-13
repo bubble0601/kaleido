@@ -220,7 +220,6 @@ export function App() {
         isSidebarCollapsed={sidebar.isCollapsed}
         onToggleSidebar={sidebar.toggle}
         onOpenQuickOpen={() => setIsQuickOpenVisible(true)}
-        rangeLabel={diff.data?.label ?? ''}
         viewMode={effectiveViewMode}
         onViewModeChange={(mode) => {
           setViewMode(mode);

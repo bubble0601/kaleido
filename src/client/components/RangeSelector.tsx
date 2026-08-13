@@ -1,11 +1,30 @@
 import { useEffect, useRef, useState } from 'react';
 
-import type { RangeSpec } from '../../shared/types';
+import { describeRange, type RangeSpec } from '../../shared/types';
 import { useRanges } from '../hooks/queries';
 
 interface RangeOption {
   label: string;
   range: RangeSpec;
+}
+
+function shortRef(ref: string): string {
+  return /^[0-9a-f]{7,40}$/i.test(ref) ? ref.slice(0, 7) : ref;
+}
+
+/** ボタン表示用にできるだけ短くした範囲ラベル */
+function describeShortRange(range: RangeSpec): string {
+  const sep = range.baseMode === 'merge-base' ? '...' : '..';
+  if (range.target === 'working') return 'unstaged';
+  if (range.target === 'staged') {
+    return range.base === 'HEAD' ? 'staged' : `${shortRef(range.base)}..staged`;
+  }
+  if (range.target === '.') {
+    return range.base === 'HEAD' ? 'uncommitted' : `${shortRef(range.base)}${sep}working`;
+  }
+  // 単一コミット (<target>^ vs <target>)
+  if (range.base === `${range.target}^`) return shortRef(range.target);
+  return `${shortRef(range.base)}${sep}${shortRef(range.target)}`;
 }
 
 interface RangeSelectorProps {
@@ -57,10 +76,12 @@ export function RangeSelector({ current, onChange }: RangeSelectorProps) {
     <div ref={containerRef} className="relative">
       <button
         type="button"
-        className="rounded border border-neutral-300 bg-white px-2.5 py-1 text-xs text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
+        className="flex items-center gap-1 rounded border border-neutral-300 bg-white px-2.5 py-1 text-xs text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
+        title={describeRange(current)}
         onClick={() => setIsOpen(!isOpen)}
       >
-        Compare ▾
+        <span className="max-w-[200px] truncate font-mono">{describeShortRange(current)}</span>
+        <span className="text-[10px]">▾</span>
       </button>
       {isOpen && (
         <div className="absolute right-0 top-8 z-50 max-h-[70vh] w-96 overflow-y-auto rounded border border-neutral-300 bg-white py-1 shadow-xl dark:border-neutral-700 dark:bg-neutral-900">
