@@ -14,7 +14,7 @@ Monaco Editor ベースのローカル Web diff viewer。CLI から起動し、�
 ## 使い方
 
 ```bash
-kaleido                     # HEAD と working tree の diff (全 uncommitted changes)
+kaleido                     # 自動判定: staged 変更あり→staged / working 変更あり→全 uncommitted / どちらもなし→直近コミット
 kaleido working             # unstaged changes (index vs working tree)
 kaleido staged              # staged changes (HEAD vs index)
 kaleido <commit>            # そのコミットの diff (<commit>^ vs <commit>)

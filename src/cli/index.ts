@@ -5,7 +5,7 @@ import { formatAllCommentsPrompt } from '../shared/commentFormat.js';
 import { describeRange, rangeKey } from '../shared/types.js';
 import { startServer } from '../server/index.js';
 import { openReviewStore } from '../server/store/reviewStore.js';
-import { getGitRoot, resolveRange } from './args.js';
+import { getGitRoot, resolveDefaultRange, resolveRange } from './args.js';
 
 const program = new Command();
 
@@ -17,7 +17,7 @@ program
 program
   .command('serve', { isDefault: true })
   .description('start the diff viewer (default command)')
-  .argument('[target]', 'commit-ish to view, or "working" / "staged" / "." (default: ".")')
+  .argument('[target]', 'commit-ish to view, or "working" / "staged" / "." (default: auto-detect)')
   .argument('[base]', 'commit-ish to compare against (default: HEAD or <target>^)')
   .option('--port <port>', 'preferred port (auto-increments if taken)', '4890')
   .option('--host <host>', 'host to bind', '127.0.0.1')
@@ -27,7 +27,7 @@ program
   .action(async (target: string | undefined, base: string | undefined, options) => {
     try {
       const repoRoot = getGitRoot(options.repo ?? process.cwd());
-      const range = resolveRange(target, base);
+      const range = target ? resolveRange(target, base) : resolveDefaultRange(repoRoot);
 
       const printCommentsAndExit = (): never => {
         try {
@@ -76,7 +76,7 @@ program
   .action((target: string | undefined, base: string | undefined, options) => {
     try {
       const repoRoot = getGitRoot(options.repo ?? process.cwd());
-      const range = resolveRange(target, base);
+      const range = target ? resolveRange(target, base) : resolveDefaultRange(repoRoot);
       const comments = openReviewStore(repoRoot).getComments(rangeKey(range));
 
       if (options.json) {
