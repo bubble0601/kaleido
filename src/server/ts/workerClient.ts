@@ -98,6 +98,15 @@ export class TsWorkerClient {
     return this.call('definition', params);
   }
 
+  references(params: {
+    path: string;
+    line: number;
+    column: number;
+    content?: string;
+  }): Promise<DefinitionLocation[]> {
+    return this.call('references', params);
+  }
+
   warmup(paths: string[]): void {
     this.worker.postMessage({ method: 'warmup', params: { paths } });
   }

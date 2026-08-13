@@ -72,6 +72,17 @@ export const api = {
       signal,
     }),
 
+  getReferences: (
+    body: { path: string; line: number; column: number; content?: string },
+    signal?: AbortSignal,
+  ) =>
+    request<DefinitionLocation[]>('/api/lang/references', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal,
+    }),
+
   getTsDiagnostics: (path: string, content?: string) =>
     request<Diagnostic[]>('/api/lang/diagnostics', {
       method: 'POST',

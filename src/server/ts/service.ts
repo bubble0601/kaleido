@@ -9,6 +9,9 @@ type Ts = typeof tsTypes;
 
 const PROJECT_IDLE_DISPOSE_MS = 10 * 60 * 1000;
 
+/** path が絶対パスの Location (repo 相対変換前) */
+type AbsoluteLocation = Omit<DefinitionLocation, 'path'> & { path: string };
+
 interface Overlay {
   content: string;
   version: number;
@@ -92,16 +95,40 @@ export class TsService {
     column: number;
     content?: string;
   }): DefinitionLocation[] {
+    return this.locate('definition', params);
+  }
+
+  references(params: {
+    path: string;
+    line: number;
+    column: number;
+    content?: string;
+  }): DefinitionLocation[] {
+    return this.locate('references', params);
+  }
+
+  private locate(
+    kind: 'definition' | 'references',
+    params: { path: string; line: number; column: number; content?: string },
+  ): DefinitionLocation[] {
     const absPath = this.toAbsPath(params.path);
     if (!this.isSupportedFile(absPath)) return [];
     const project = this.getProjectFor(absPath);
     if (!project) return [];
-    const defs = project.definition(absPath, params.line, params.column, params.content);
+    const locations =
+      kind === 'definition'
+        ? project.definition(absPath, params.line, params.column, params.content)
+        : project.references(absPath, params.line, params.column, params.content);
     // repo 外 (同梱 TS の lib.d.ts 等) は開けないため除外し、repo 相対パスへ変換
     const result: DefinitionLocation[] = [];
-    for (const def of defs) {
-      if (def.path === this.repoRoot || !def.path.startsWith(`${this.repoRoot}${sep}`)) continue;
-      result.push({ ...def, path: relative(this.repoRoot, def.path).split(sep).join('/') });
+    for (const location of locations) {
+      if (
+        location.path === this.repoRoot ||
+        !location.path.startsWith(`${this.repoRoot}${sep}`)
+      ) {
+        continue;
+      }
+      result.push({ ...location, path: relative(this.repoRoot, location.path).split(sep).join('/') });
     }
     return result;
   }
@@ -301,32 +328,58 @@ class Project {
     line: number,
     column: number,
     content?: string,
-  ): (Omit<DefinitionLocation, 'path'> & { path: string })[] {
+  ): AbsoluteLocation[] {
+    const offset = this.prepareOffset(absPath, line, column, content);
+    if (offset === null) return [];
+    const defs = this.languageService.getDefinitionAtPosition(absPath, offset) ?? [];
+    return this.spansToLocations(defs);
+  }
+
+  references(
+    absPath: string,
+    line: number,
+    column: number,
+    content?: string,
+  ): AbsoluteLocation[] {
+    const offset = this.prepareOffset(absPath, line, column, content);
+    if (offset === null) return [];
+    const refs = this.languageService.getReferencesAtPosition(absPath, offset) ?? [];
+    return this.spansToLocations(refs);
+  }
+
+  /** overlay 同期 + 1-based line/column → offset 変換 */
+  private prepareOffset(
+    absPath: string,
+    line: number,
+    column: number,
+    content?: string,
+  ): number | null {
     this.ensureFileInProject(absPath);
     this.syncOverlay(absPath, content);
-
     const sourceFile = this.getSourceFile(absPath);
-    if (!sourceFile) return [];
-    let offset: number;
+    if (!sourceFile) return null;
     try {
-      offset = this.ts.getPositionOfLineAndCharacter(sourceFile, line - 1, column - 1);
+      return this.ts.getPositionOfLineAndCharacter(sourceFile, line - 1, column - 1);
     } catch {
-      return [];
+      return null;
     }
+  }
 
-    const defs = this.languageService.getDefinitionAtPosition(absPath, offset) ?? [];
+  private spansToLocations(
+    entries: readonly { fileName: string; textSpan: tsTypes.TextSpan }[],
+  ): AbsoluteLocation[] {
     const program = this.languageService.getProgram();
-    const result: (Omit<DefinitionLocation, 'path'> & { path: string })[] = [];
-    for (const def of defs) {
-      const targetSf = program?.getSourceFile(def.fileName);
+    const result: AbsoluteLocation[] = [];
+    for (const entry of entries) {
+      const targetSf = program?.getSourceFile(entry.fileName);
       if (!targetSf) continue;
-      const start = this.ts.getLineAndCharacterOfPosition(targetSf, def.textSpan.start);
+      const start = this.ts.getLineAndCharacterOfPosition(targetSf, entry.textSpan.start);
       const end = this.ts.getLineAndCharacterOfPosition(
         targetSf,
-        def.textSpan.start + def.textSpan.length,
+        entry.textSpan.start + entry.textSpan.length,
       );
       result.push({
-        path: def.fileName,
+        path: entry.fileName,
         startLine: start.line + 1,
         startColumn: start.character + 1,
         endLine: end.line + 1,

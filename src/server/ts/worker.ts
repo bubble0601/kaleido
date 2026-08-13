@@ -7,7 +7,7 @@ import { TsService } from './service.js';
 
 interface RequestMessage {
   id?: number;
-  method: 'hover' | 'diagnostics' | 'definition' | 'warmup' | 'invalidateFile';
+  method: 'hover' | 'diagnostics' | 'definition' | 'references' | 'warmup' | 'invalidateFile';
   params: never;
 }
 
@@ -29,6 +29,9 @@ port.on('message', (message: RequestMessage) => {
         break;
       case 'definition':
         result = service.definition(params);
+        break;
+      case 'references':
+        result = service.references(params);
         break;
       case 'warmup':
         service.warmup((params as { paths: string[] }).paths);

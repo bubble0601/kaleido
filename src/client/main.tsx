@@ -3,13 +3,18 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { App } from './App';
-import { registerServerDefinitionProvider, registerServerHoverProvider } from './monaco/hoverProvider';
+import {
+  registerServerDefinitionProvider,
+  registerServerHoverProvider,
+  registerServerReferenceProvider,
+} from './monaco/hoverProvider';
 import { registerKaleidoEditorOpener } from './monaco/navigation';
 import { registerIconCollections } from './utils/icons';
 import './index.css';
 
 registerServerHoverProvider();
 registerServerDefinitionProvider();
+registerServerReferenceProvider();
 registerKaleidoEditorOpener();
 registerIconCollections();
 
