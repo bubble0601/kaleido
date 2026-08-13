@@ -12,6 +12,7 @@ const BUTTON_CLASS =
 interface ToolbarProps {
   isSidebarCollapsed?: boolean;
   onToggleSidebar?: () => void;
+  onOpenQuickOpen?: () => void;
   rangeLabel: string;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
@@ -44,6 +45,7 @@ function SidebarToggleIcon({ isCollapsed }: { isCollapsed: boolean }) {
 export function Toolbar({
   isSidebarCollapsed,
   onToggleSidebar,
+  onOpenQuickOpen,
   rangeLabel,
   viewMode,
   onViewModeChange,
@@ -64,6 +66,19 @@ export function Toolbar({
           onClick={onToggleSidebar}
         >
           <SidebarToggleIcon isCollapsed={!!isSidebarCollapsed} />
+        </button>
+      )}
+      {onOpenQuickOpen && (
+        <button
+          type="button"
+          className="rounded p-1 text-neutral-500 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:bg-neutral-700"
+          title="Open file (⌘P)"
+          onClick={onOpenQuickOpen}
+        >
+          <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
+            <circle cx="6.5" cy="6.5" r="4.5" />
+            <line x1="10" y1="10" x2="14" y2="14" strokeLinecap="round" />
+          </svg>
         </button>
       )}
       <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">kaleido</span>

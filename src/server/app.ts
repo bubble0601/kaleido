@@ -40,6 +40,10 @@ export function createApp(ctx: AppContext): Hono {
     return c.json(await ctx.gitRefs.getRanges());
   });
 
+  app.get('/api/files', async (c) => {
+    return c.json({ paths: await ctx.gitDiff.listRepoFiles() });
+  });
+
   app.get('/api/diff', zValidator('query', rangeSchema), async (c) => {
     const range = toRange(c.req.valid('query'));
     const diff = await ctx.gitDiff.getDiff(range);

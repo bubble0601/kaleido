@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CommentCard, CommentForm } from './components/comments/CommentWidgets';
 import { DiffView } from './components/DiffView';
 import { FileTree } from './components/FileTree';
+import { QuickOpen } from './components/QuickOpen';
 import { Toolbar } from './components/Toolbar';
 import { useDiff, useFileContent, useLint, useMeta, useTsDiagnostics } from './hooks/queries';
 import { isFileLevelComment } from '../shared/types';
@@ -18,8 +19,18 @@ import { getInitialUrlPath, getInitialUrlRange, syncUrl } from './utils/urlState
 export function App() {
   const meta = useMeta();
   useSse();
-  const { range, selectedPath, viewMode, theme, setRange, setSelectedPath, setViewMode } =
-    useUiStore();
+  const {
+    range,
+    selectedPath,
+    browsePath,
+    viewMode,
+    theme,
+    setRange,
+    setSelectedPath,
+    setBrowsePath,
+    setViewMode,
+  } = useUiStore();
+  const [isQuickOpenVisible, setIsQuickOpenVisible] = useState(false);
 
   // テーマを html クラスと Monaco に反映
   useEffect(() => {
@@ -36,14 +47,26 @@ export function App() {
   const diff = useDiff(range);
   const files = useMemo(() => diff.data?.files ?? [], [diff.data]);
 
-  const selectedFile = useMemo(
-    () => files.find((f) => f.path === selectedPath) ?? null,
-    [files, selectedPath],
-  );
+  const selectedFile = useMemo(() => {
+    if (browsePath) {
+      const inDiff = files.find((f) => f.path === browsePath);
+      if (inDiff) return inDiff;
+      return {
+        path: browsePath,
+        status: 'added',
+        additions: 0,
+        deletions: 0,
+        isBinary: false,
+        contentHash: `browse:${browsePath}`,
+      } satisfies (typeof files)[number];
+    }
+    return files.find((f) => f.path === selectedPath) ?? null;
+  }, [files, selectedPath, browsePath]);
 
   // 初期選択 (初回は URL の path を優先) とファイル消滅時のフォールバック
   const hasRestoredUrlPathRef = useRef(false);
   useEffect(() => {
+    if (browsePath) return;
     if (files.length === 0 || selectedFile) return;
     if (!hasRestoredUrlPathRef.current) {
       hasRestoredUrlPathRef.current = true;
@@ -54,7 +77,7 @@ export function App() {
       }
     }
     setSelectedPath(files[0]!.path);
-  }, [files, selectedFile, setSelectedPath]);
+  }, [files, selectedFile, browsePath, setSelectedPath]);
 
   // 範囲・選択ファイルを URL に反映 (リロード・共有用)
   useEffect(() => {
@@ -67,8 +90,9 @@ export function App() {
   // 新規ファイルは diff の左側が空で無駄なため、既定で File 表示にする。
   // モードボタンで明示的に切り替えた場合はそのファイルに限り従う。
   const [modeOverridePath, setModeOverridePath] = useState<string | null>(null);
-  const effectiveViewMode =
-    selectedFile?.status === 'added' && modeOverridePath !== selectedFile.path
+  const effectiveViewMode = browsePath
+    ? 'file'
+    : selectedFile?.status === 'added' && modeOverridePath !== selectedFile.path
       ? 'file'
       : viewMode;
 
@@ -107,6 +131,7 @@ export function App() {
   const selectNext = useCallback(
     (delta: 1 | -1) => {
       const index = files.findIndex((f) => f.path === selectedPath);
+
       const next = index + delta;
       if (next >= 0 && next < files.length) {
         setSelectedPath(files[next]!.path);
@@ -124,6 +149,11 @@ export function App() {
       if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
         e.preventDefault();
         sidebar.toggle();
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'p') {
+        e.preventDefault();
+        setIsQuickOpenVisible(true);
         return;
       }
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -173,6 +203,7 @@ export function App() {
       <Toolbar
         isSidebarCollapsed={sidebar.isCollapsed}
         onToggleSidebar={sidebar.toggle}
+        onOpenQuickOpen={() => setIsQuickOpenVisible(true)}
         rangeLabel={diff.data?.label ?? ''}
         viewMode={effectiveViewMode}
         onViewModeChange={(mode) => {
@@ -186,6 +217,17 @@ export function App() {
       >
         <RangeSelector current={range} onChange={setRange} />
       </Toolbar>
+      <QuickOpen
+        isOpen={isQuickOpenVisible}
+        onClose={() => setIsQuickOpenVisible(false)}
+        onSelect={(path) => {
+          if (files.some((f) => f.path === path)) {
+            setSelectedPath(path);
+          } else {
+            setBrowsePath(path);
+          }
+        }}
+      />
       <div className="flex min-h-0 flex-1">
         {!sidebar.isCollapsed && (
           <aside

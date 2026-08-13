@@ -40,6 +40,8 @@ export const api = {
 
   getRanges: () => request<RangesResponse>('/api/ranges'),
 
+  getRepoFiles: () => request<{ paths: string[] }>('/api/files'),
+
   getDiff: (range: RangeSpec) => request<DiffResponse>(`/api/diff?${rangeParams(range)}`),
 
   getFile: (range: RangeSpec, file: DiffFileMeta) => {

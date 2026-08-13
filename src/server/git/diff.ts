@@ -95,6 +95,21 @@ export class GitDiff {
     return result;
   }
 
+  /** tracked + untracked (gitignore 除外) の全ファイル一覧 (Quick Open 用) */
+  async listRepoFiles(): Promise<string[]> {
+    const [tracked, untracked] = await Promise.all([
+      this.git.raw(['ls-files', '-z']),
+      this.git.raw(['ls-files', '--others', '--exclude-standard', '-z']),
+    ]);
+    const paths = new Set<string>();
+    for (const out of [tracked, untracked]) {
+      for (const path of out.split('\0')) {
+        if (path.length > 0) paths.add(path);
+      }
+    }
+    return [...paths].sort((a, b) => a.localeCompare(b));
+  }
+
   async validateRef(ref: string): Promise<boolean> {
     if (ref === '.' || ref === 'working' || ref === 'staged') return true;
     try {
