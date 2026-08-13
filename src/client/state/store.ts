@@ -2,6 +2,12 @@ import { create } from 'zustand';
 
 import type { RangeSpec } from '../../shared/types';
 
+export interface RevealTarget {
+  path: string;
+  line: number;
+  column: number;
+}
+
 export type ViewMode = 'split' | 'inline' | 'file';
 export type Theme = 'light' | 'dark';
 
@@ -18,11 +24,14 @@ interface UiState {
   selectedPath: string | null;
   /** diff 外のファイルを開いているときのパス (Quick Open から) */
   browsePath: string | null;
+  /** ファイルを開いた後にスクロールする位置 (Go to Definition から) */
+  pendingReveal: RevealTarget | null;
   viewMode: ViewMode;
   theme: Theme;
   setRange: (range: RangeSpec) => void;
   setSelectedPath: (path: string | null) => void;
   setBrowsePath: (path: string | null) => void;
+  setPendingReveal: (target: RevealTarget | null) => void;
   setViewMode: (mode: ViewMode) => void;
   setTheme: (theme: Theme) => void;
 }
@@ -31,11 +40,13 @@ export const useUiStore = create<UiState>((set) => ({
   range: null,
   selectedPath: null,
   browsePath: null,
+  pendingReveal: null,
   viewMode: 'split',
   theme: getInitialTheme(),
   setRange: (range) => set({ range, selectedPath: null, browsePath: null }),
   setSelectedPath: (selectedPath) => set({ selectedPath, browsePath: null }),
   setBrowsePath: (browsePath) => set({ browsePath }),
+  setPendingReveal: (pendingReveal) => set({ pendingReveal }),
   setViewMode: (viewMode) => set({ viewMode }),
   setTheme: (theme) => {
     localStorage.setItem(THEME_STORAGE_KEY, theme);

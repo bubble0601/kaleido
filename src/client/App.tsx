@@ -14,6 +14,7 @@ import { monaco } from './monaco/setup';
 import { RangeSelector } from './components/RangeSelector';
 import { useUiStore } from './state/store';
 import { copyToClipboard, formatAllCommentsPrompt } from './utils/commentFormat';
+import { setFileOpenHandler } from './monaco/navigation';
 import { getInitialUrlPath, getInitialUrlRange, syncUrl } from './utils/urlState';
 
 export function App() {
@@ -30,6 +31,8 @@ export function App() {
     setBrowsePath,
     setViewMode,
   } = useUiStore();
+  const setPendingReveal = useUiStore((state) => state.setPendingReveal);
+  const pendingReveal = useUiStore((state) => state.pendingReveal);
   const [isQuickOpenVisible, setIsQuickOpenVisible] = useState(false);
 
   // テーマを html クラスと Monaco に反映
@@ -78,6 +81,19 @@ export function App() {
     }
     setSelectedPath(files[0]!.path);
   }, [files, selectedFile, browsePath, setSelectedPath]);
+
+  // Go to Definition などからのファイルオープン要求
+  useEffect(() => {
+    setFileOpenHandler((target) => {
+      setPendingReveal(target);
+      if (files.some((f) => f.path === target.path)) {
+        setSelectedPath(target.path);
+      } else {
+        setBrowsePath(target.path);
+      }
+    });
+    return () => setFileOpenHandler(null);
+  }, [files, setSelectedPath, setBrowsePath, setPendingReveal]);
 
   // 範囲・選択ファイルを URL に反映 (リロード・共有用)
   useEffect(() => {
@@ -304,6 +320,7 @@ export function App() {
               viewMode={effectiveViewMode}
               diagnostics={diagnostics}
               comments={comments}
+              pendingReveal={pendingReveal}
               onCreateComment={handleCreateComment}
               onUpdateComment={handleUpdateComment}
               onDeleteComment={handleDeleteComment}

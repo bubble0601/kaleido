@@ -9,6 +9,7 @@ import type {
   MetaResponse,
   RangeSpec,
   RangesResponse,
+  DefinitionLocation,
   Diagnostic,
   LintResponse,
   ViewedState,
@@ -54,6 +55,17 @@ export const api = {
 
   hover: (body: HoverRequest, signal?: AbortSignal) =>
     request<HoverResponse | null>('/api/lang/hover', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal,
+    }),
+
+  getDefinition: (
+    body: { path: string; line: number; column: number; content?: string },
+    signal?: AbortSignal,
+  ) =>
+    request<DefinitionLocation[]>('/api/lang/definition', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

@@ -68,6 +68,22 @@ export function createApp(ctx: AppContext): Hono {
   );
 
   app.post(
+    '/api/lang/definition',
+    zValidator(
+      'json',
+      z.object({
+        path: z.string().min(1),
+        line: z.number().int().min(1),
+        column: z.number().int().min(1),
+        content: z.string().optional(),
+      }),
+    ),
+    async (c) => {
+      return c.json(await ctx.tsService.definition(c.req.valid('json')));
+    },
+  );
+
+  app.post(
     '/api/lint',
     zValidator('json', z.object({ paths: z.array(z.string().min(1)).max(500) })),
     async (c) => {

@@ -1,6 +1,6 @@
 import { Worker } from 'node:worker_threads';
 
-import type { Diagnostic, HoverResponse } from '../../shared/types.js';
+import type { DefinitionLocation, Diagnostic, HoverResponse } from '../../shared/types.js';
 
 interface PendingCall {
   resolve: (value: unknown) => void;
@@ -87,6 +87,15 @@ export class TsWorkerClient {
 
   diagnostics(params: { path: string; content?: string }): Promise<Diagnostic[]> {
     return this.call('diagnostics', params);
+  }
+
+  definition(params: {
+    path: string;
+    line: number;
+    column: number;
+    content?: string;
+  }): Promise<DefinitionLocation[]> {
+    return this.call('definition', params);
   }
 
   warmup(paths: string[]): void {

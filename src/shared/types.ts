@@ -82,6 +82,15 @@ export interface HoverResponse {
   };
 }
 
+export interface DefinitionLocation {
+  /** repo 相対パス */
+  path: string;
+  startLine: number;
+  startColumn: number;
+  endLine: number;
+  endColumn: number;
+}
+
 export interface Diagnostic {
   source: 'ts' | 'eslint';
   severity: 'error' | 'warning' | 'info';

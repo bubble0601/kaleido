@@ -1,9 +1,9 @@
 import { createRequire } from 'node:module';
-import { dirname, isAbsolute, join, resolve, sep } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 import type tsTypes from 'typescript';
 
-import type { Diagnostic, HoverResponse } from '../../shared/types.js';
+import type { DefinitionLocation, Diagnostic, HoverResponse } from '../../shared/types.js';
 
 type Ts = typeof tsTypes;
 
@@ -84,6 +84,26 @@ export class TsService {
     const project = this.getProjectFor(absPath);
     if (!project) return [];
     return project.diagnostics(absPath, params.content);
+  }
+
+  definition(params: {
+    path: string;
+    line: number;
+    column: number;
+    content?: string;
+  }): DefinitionLocation[] {
+    const absPath = this.toAbsPath(params.path);
+    if (!this.isSupportedFile(absPath)) return [];
+    const project = this.getProjectFor(absPath);
+    if (!project) return [];
+    const defs = project.definition(absPath, params.line, params.column, params.content);
+    // repo 外 (同梱 TS の lib.d.ts 等) は開けないため除外し、repo 相対パスへ変換
+    const result: DefinitionLocation[] = [];
+    for (const def of defs) {
+      if (def.path === this.repoRoot || !def.path.startsWith(`${this.repoRoot}${sep}`)) continue;
+      result.push({ ...def, path: relative(this.repoRoot, def.path).split(sep).join('/') });
+    }
+    return result;
   }
 
   /** diff 取得後にバックグラウンドで Program を構築しておく (初回 hover の体感改善) */
@@ -274,6 +294,46 @@ class Project {
         endColumn: end.character + 1,
       },
     };
+  }
+
+  definition(
+    absPath: string,
+    line: number,
+    column: number,
+    content?: string,
+  ): (Omit<DefinitionLocation, 'path'> & { path: string })[] {
+    this.ensureFileInProject(absPath);
+    this.syncOverlay(absPath, content);
+
+    const sourceFile = this.getSourceFile(absPath);
+    if (!sourceFile) return [];
+    let offset: number;
+    try {
+      offset = this.ts.getPositionOfLineAndCharacter(sourceFile, line - 1, column - 1);
+    } catch {
+      return [];
+    }
+
+    const defs = this.languageService.getDefinitionAtPosition(absPath, offset) ?? [];
+    const program = this.languageService.getProgram();
+    const result: (Omit<DefinitionLocation, 'path'> & { path: string })[] = [];
+    for (const def of defs) {
+      const targetSf = program?.getSourceFile(def.fileName);
+      if (!targetSf) continue;
+      const start = this.ts.getLineAndCharacterOfPosition(targetSf, def.textSpan.start);
+      const end = this.ts.getLineAndCharacterOfPosition(
+        targetSf,
+        def.textSpan.start + def.textSpan.length,
+      );
+      result.push({
+        path: def.fileName,
+        startLine: start.line + 1,
+        startColumn: start.character + 1,
+        endLine: end.line + 1,
+        endColumn: end.character + 1,
+      });
+    }
+    return result;
   }
 
   diagnostics(absPath: string, content?: string): Diagnostic[] {

@@ -10,9 +10,9 @@ import {
   type RangeSpec,
 } from '../../shared/types';
 import { setDiagnosticMarkers } from '../monaco/markers';
-import { getOrCreateModel } from '../monaco/models';
+import { getOrCreateModel, repoPathFromUri } from '../monaco/models';
 import { monaco } from '../monaco/setup';
-import type { ViewMode } from '../state/store';
+import { useUiStore, type RevealTarget, type ViewMode } from '../state/store';
 import { anchorComment } from '../utils/commentAnchor';
 import { EditorZones, type ZoneItem } from './comments/EditorZones';
 import { CommentCard, CommentForm } from './comments/CommentWidgets';
@@ -48,6 +48,8 @@ interface DiffViewProps {
   viewMode: ViewMode;
   diagnostics?: Diagnostic[];
   comments: Comment[];
+  /** Go to Definition などで開いた後にスクロールする位置 */
+  pendingReveal?: RevealTarget | null;
   onCreateComment: (params: {
     side: CommentSide;
     startLine?: number;
@@ -120,6 +122,7 @@ export function DiffView({
   viewMode,
   diagnostics,
   comments,
+  pendingReveal,
   onCreateComment,
   onUpdateComment,
   onDeleteComment,
@@ -212,6 +215,23 @@ export function DiffView({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDiffMode, file, contents, range, placeholderMessage, fileModeSide]);
+
+  // Go to Definition からのジャンプ先へスクロール (対象モデルが表示されてから消費する)
+  useEffect(() => {
+    if (!pendingReveal || pendingReveal.path !== file.path || placeholderMessage) return;
+    const editor = isDiffMode ? diffEditorRef.current?.getModifiedEditor() : codeEditorRef.current;
+    const model = editor?.getModel();
+    // モデル未設定・別ファイルのモデルなら、contents 到着後の再実行に任せる
+    if (!editor || !model || repoPathFromUri(model.uri) !== file.path) return;
+    useUiStore.getState().setPendingReveal(null);
+    const position = { lineNumber: pendingReveal.line, column: pendingReveal.column };
+    // mount 直後はレイアウト前で reveal が無効化されるため、描画後に実行する
+    requestAnimationFrame(() => {
+      editor.revealPositionInCenter(position);
+      editor.setPosition(position);
+      editor.focus();
+    });
+  }, [pendingReveal, isDiffMode, file, contents, placeholderMessage]);
 
   // TS/ESLint 診断を modified 側モデルに marker として反映
   useEffect(() => {
