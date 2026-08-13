@@ -50,6 +50,8 @@ interface DiffViewProps {
   comments: Comment[];
   /** Go to Definition などで開いた後にスクロールする位置 */
   pendingReveal?: RevealTarget | null;
+  /** fold all / unfold all の対象エディタ (diff は左右両方) を親へ通知 */
+  onFoldTargetsChange?: (editors: ICodeEditor[]) => void;
   onCreateComment: (params: {
     side: CommentSide;
     startLine?: number;
@@ -123,6 +125,7 @@ export function DiffView({
   diagnostics,
   comments,
   pendingReveal,
+  onFoldTargetsChange,
   onCreateComment,
   onUpdateComment,
   onDeleteComment,
@@ -178,6 +181,13 @@ export function DiffView({
   useEffect(() => {
     diffEditorRef.current?.updateOptions({ renderSideBySide: viewMode === 'split' });
   }, [viewMode]);
+
+  // DiffEditor は folding 非対応のため、fold 対象は file モードのエディタのみ
+  useEffect(() => {
+    if (!onFoldTargetsChange) return;
+    onFoldTargetsChange(!isDiffMode && fileEditor ? [fileEditor] : []);
+    return () => onFoldTargetsChange([]);
+  }, [isDiffMode, fileEditor, onFoldTargetsChange]);
 
   const placeholderMessage = file.isBinary
     ? 'Binary file'

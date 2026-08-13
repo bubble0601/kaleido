@@ -15,6 +15,8 @@ import { RangeSelector } from './components/RangeSelector';
 import { useUiStore } from './state/store';
 import { copyToClipboard, formatAllCommentsPrompt } from './utils/commentFormat';
 import { setFileOpenHandler } from './monaco/navigation';
+
+type ICodeEditor = import('monaco-editor/editor/editor.api.js').editor.ICodeEditor;
 import { getInitialUrlPath, getInitialUrlRange, syncUrl } from './utils/urlState';
 
 export function App() {
@@ -103,6 +105,20 @@ export function App() {
   const [isFileCommentOpen, setIsFileCommentOpen] = useState(false);
   useEffect(() => setIsFileCommentOpen(false), [selectedPath, range]);
 
+  // fold all / unfold all (対象エディタは DiffView から通知される)
+  const foldTargetsRef = useRef<ICodeEditor[]>([]);
+  const handleFoldTargetsChange = useCallback((editors: ICodeEditor[]) => {
+    foldTargetsRef.current = editors;
+  }, []);
+  const [isAllFolded, setIsAllFolded] = useState(false);
+  const toggleFoldAll = useCallback(() => {
+    const actionId = isAllFolded ? 'editor.unfoldAll' : 'editor.foldAll';
+    for (const editor of foldTargetsRef.current) {
+      void editor.getAction(actionId)?.run();
+    }
+    setIsAllFolded(!isAllFolded);
+  }, [isAllFolded]);
+
   // 新規ファイルは diff の左側が空で無駄なため、既定で File 表示にする。
   // モードボタンで明示的に切り替えた場合はそのファイルに限り従う。
   const [modeOverridePath, setModeOverridePath] = useState<string | null>(null);
@@ -111,6 +127,8 @@ export function App() {
     : selectedFile?.status === 'added' && modeOverridePath !== selectedFile.path
       ? 'file'
       : viewMode;
+
+  useEffect(() => setIsAllFolded(false), [selectedPath, browsePath, effectiveViewMode]);
 
   const contents = useFileContent(range, selectedFile);
   const tsDiagnostics = useTsDiagnostics(selectedFile, contents.data);
@@ -277,13 +295,37 @@ export function App() {
                 {selectedFile.path}
               </span>
               <div className="flex-1" />
+              {/* DiffEditor は folding 非対応のため File 表示のときのみ */}
+              {effectiveViewMode === 'file' && (
               <button
                 type="button"
-                className="rounded border border-neutral-300 bg-white px-2 py-0.5 text-[11px] text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                className="rounded p-1 text-neutral-500 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:bg-neutral-700"
+                title={isAllFolded ? 'Unfold all' : 'Fold all'}
+                onClick={toggleFoldAll}
+              >
+                {isAllFolded ? (
+                  <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M4 7l4-4 4 4" />
+                    <path d="M4 9l4 4 4-4" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M4 2l4 4 4-4" />
+                    <path d="M4 14l4-4 4 4" />
+                  </svg>
+                )}
+              </button>
+              )}
+              <button
+                type="button"
+                className="rounded p-1 text-neutral-500 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:bg-neutral-700"
                 title="Comment on the whole file"
                 onClick={() => setIsFileCommentOpen(true)}
               >
-                + File comment
+                <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M2 3.5A1.5 1.5 0 0 1 3.5 2h9A1.5 1.5 0 0 1 14 3.5v6a1.5 1.5 0 0 1-1.5 1.5H8.4L5 13.8V11H3.5A1.5 1.5 0 0 1 2 9.5z" />
+                  <path d="M8 4.5v4M6 6.5h4" />
+                </svg>
               </button>
             </div>
           )}
@@ -320,6 +362,7 @@ export function App() {
               diagnostics={diagnostics}
               comments={comments}
               pendingReveal={pendingReveal}
+              onFoldTargetsChange={handleFoldTargetsChange}
               onCreateComment={handleCreateComment}
               onUpdateComment={handleUpdateComment}
               onDeleteComment={handleDeleteComment}
