@@ -43,6 +43,13 @@ export const api = {
 
   getRepoFiles: () => request<{ paths: string[] }>('/api/files'),
 
+  saveFile: (path: string, content: string) =>
+    request<{ ok: boolean }>('/api/file/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path, content }),
+    }),
+
   getDiff: (range: RangeSpec) => request<DiffResponse>(`/api/diff?${rangeParams(range)}`),
 
   getFile: (range: RangeSpec, file: DiffFileMeta) => {

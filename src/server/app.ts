@@ -148,6 +148,16 @@ export function createApp(ctx: AppContext): Hono {
     },
   );
 
+  app.post(
+    '/api/file/save',
+    zValidator('json', z.object({ path: z.string().min(1), content: z.string() })),
+    async (c) => {
+      const { path, content } = c.req.valid('json');
+      await ctx.gitContent.writeWorkingFile(path, content);
+      return c.json({ ok: true });
+    },
+  );
+
   const commentBodySchema = z
     .object({
       path: z.string().min(1),

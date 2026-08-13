@@ -10,7 +10,7 @@ import {
   type RangeSpec,
 } from '../../shared/types';
 import { setDiagnosticMarkers } from '../monaco/markers';
-import { getOrCreateModel, repoPathFromUri } from '../monaco/models';
+import { getOrCreateModel, repoPathFromUri, setModelDirtyState } from '../monaco/models';
 import { monaco } from '../monaco/setup';
 import { useUiStore, type RevealTarget, type ViewMode } from '../state/store';
 import { anchorComment } from '../utils/commentAnchor';
@@ -52,6 +52,12 @@ interface DiffViewProps {
   pendingReveal?: RevealTarget | null;
   /** fold all / unfold all の対象エディタ (diff は左右両方) を親へ通知 */
   onFoldTargetsChange?: (editors: ICodeEditor[]) => void;
+  /** modified 側が working tree で編集可能か */
+  isEditable?: boolean;
+  /** 編集対象エディタ (保存時の内容取得用) を親へ通知 */
+  onEditTargetChange?: (editor: ICodeEditor | null) => void;
+  /** 未保存変更の有無を親へ通知 */
+  onDirtyChange?: (isDirty: boolean) => void;
   onCreateComment: (params: {
     side: CommentSide;
     startLine?: number;
@@ -126,6 +132,9 @@ export function DiffView({
   comments,
   pendingReveal,
   onFoldTargetsChange,
+  isEditable = false,
+  onEditTargetChange,
+  onDirtyChange,
   onCreateComment,
   onUpdateComment,
   onDeleteComment,
@@ -205,6 +214,40 @@ export function DiffView({
       content: content.content,
     });
   };
+
+  // 編集可否: modified 側 (diff の右 / file モードの modified 表示) のみ書き込み許可
+  useEffect(() => {
+    const canEditFileMode = !isDiffMode && fileModeSide === 'modified' && isEditable;
+    modifiedEditor?.updateOptions({ readOnly: !(isDiffMode && isEditable) });
+    fileEditor?.updateOptions({ readOnly: !canEditFileMode });
+    const editTarget = isDiffMode
+      ? isEditable
+        ? modifiedEditor
+        : null
+      : canEditFileMode
+        ? fileEditor
+        : null;
+    onEditTargetChange?.(editTarget);
+    return () => onEditTargetChange?.(null);
+  }, [isDiffMode, isEditable, modifiedEditor, fileEditor, fileModeSide, onEditTargetChange]);
+
+  // 未保存変更の追跡: モデル内容とサーバー内容の比較で判定
+  useEffect(() => {
+    if (!isEditable || placeholderMessage || !contents.modified) return;
+    const model = getSideModel('modified');
+    if (!model) return;
+    const serverContent = contents.modified.content;
+    const syncDirty = () => {
+      const isDirty = model.getValue() !== serverContent;
+      setModelDirtyState(model.uri, isDirty);
+      onDirtyChange?.(isDirty);
+    };
+    syncDirty();
+    const listener = model.onDidChangeContent(syncDirty);
+    return () => listener.dispose();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditable, contents, file, placeholderMessage, onDirtyChange]);
+
 
   useEffect(() => {
     if (placeholderMessage) return;

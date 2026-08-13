@@ -8,6 +8,20 @@ export const ORIGINAL_SCHEME = 'kaleido-org';
 
 const lru: string[] = [];
 
+/** 未保存の編集があるモデル (サーバー内容での上書きを抑止する) */
+const dirtyKeys = new Set<string>();
+
+export function setModelDirtyState(
+  uri: import('monaco-editor/editor/editor.api.js').Uri,
+  isDirty: boolean,
+): void {
+  if (isDirty) {
+    dirtyKeys.add(uri.toString());
+  } else {
+    dirtyKeys.delete(uri.toString());
+  }
+}
+
 function touch(key: string): void {
   const index = lru.indexOf(key);
   if (index !== -1) lru.splice(index, 1);
@@ -38,7 +52,7 @@ export function getOrCreateModel(params: {
   const key = uri.toString();
 
   let model = monaco.editor.getModel(uri);
-  if (model && model.getValue() !== params.content) {
+  if (model && model.getValue() !== params.content && !dirtyKeys.has(key)) {
     model.setValue(params.content);
   }
   if (!model) {

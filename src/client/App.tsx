@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { CommentCard, CommentForm } from './components/comments/CommentWidgets';
@@ -7,6 +8,7 @@ import { QuickOpen } from './components/QuickOpen';
 import { Toolbar } from './components/Toolbar';
 import { useDiff, useFileContent, useLint, useMeta, useTsDiagnostics } from './hooks/queries';
 import { isFileLevelComment } from '../shared/types';
+import { api } from './services/api';
 import { computeViewedPaths, useComments, useViewed } from './hooks/review';
 import { useSidebarResize } from './hooks/useSidebarResize';
 import { useSse } from './hooks/useSse';
@@ -20,6 +22,7 @@ type ICodeEditor = import('monaco-editor/editor/editor.api.js').editor.ICodeEdit
 import { getInitialUrlPath, getInitialUrlRange, syncUrl } from './utils/urlState';
 
 export function App() {
+  const queryClient = useQueryClient();
   const meta = useMeta();
   useSse();
   const {
@@ -105,6 +108,15 @@ export function App() {
   const [isFileCommentOpen, setIsFileCommentOpen] = useState(false);
   useEffect(() => setIsFileCommentOpen(false), [selectedPath, range]);
 
+  // 編集・保存 (modified 側が working tree のときのみ)
+  const editTargetRef = useRef<ICodeEditor | null>(null);
+  const handleEditTargetChange = useCallback((editor: ICodeEditor | null) => {
+    editTargetRef.current = editor;
+  }, []);
+  const [isDirty, setIsDirty] = useState(false);
+  const handleDirtyChange = useCallback((dirty: boolean) => setIsDirty(dirty), []);
+  useEffect(() => setIsDirty(false), [selectedPath, browsePath, range]);
+
   // fold all / unfold all (対象エディタは DiffView から通知される)
   const foldTargetsRef = useRef<ICodeEditor[]>([]);
   const handleFoldTargetsChange = useCallback((editors: ICodeEditor[]) => {
@@ -131,6 +143,19 @@ export function App() {
   useEffect(() => setIsAllFolded(false), [selectedPath, browsePath, effectiveViewMode]);
 
   const contents = useFileContent(range, selectedFile);
+  const isEditable = contents.data?.modified?.ref === 'working' && !contents.data.isTooLarge;
+  const saveFile = useCallback(async () => {
+    const editor = editTargetRef.current;
+    if (!editor || !selectedFile) return;
+    try {
+      await api.saveFile(selectedFile.path, editor.getValue());
+      setIsDirty(false);
+      await queryClient.invalidateQueries();
+    } catch (error) {
+      console.error('Failed to save file:', error);
+    }
+  }, [selectedFile, queryClient]);
+
   const tsDiagnostics = useTsDiagnostics(selectedFile, contents.data);
   const lint = useLint(range, files);
   const diagnostics = useMemo(() => {
@@ -177,6 +202,12 @@ export function App() {
   // j/k: ファイル移動, v: viewed トグル (viewed にしたときは次ファイルへ)
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      // 保存はエディタ (textarea) にフォーカスがあっても受け付ける
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault();
+        if (isDirty) void saveFile();
+        return;
+      }
       if (e.target instanceof HTMLElement && ['INPUT', 'TEXTAREA'].includes(e.target.tagName)) {
         return;
       }
@@ -201,7 +232,7 @@ export function App() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [selectNext, selectedFile, toggleViewed, viewedPaths, sidebar]);
+  }, [selectNext, selectedFile, toggleViewed, viewedPaths, sidebar, isDirty, saveFile]);
 
   const handleCreateComment = useCallback(
     (params: {
@@ -294,7 +325,27 @@ export function App() {
               <span className="truncate font-mono text-neutral-600 dark:text-neutral-300" title={selectedFile.path}>
                 {selectedFile.path}
               </span>
+              {isDirty && (
+                <span className="shrink-0 text-yellow-500" title="Unsaved changes">
+                  ●
+                </span>
+              )}
               <div className="flex-1" />
+              {isEditable && (
+                <button
+                  type="button"
+                  className="rounded p-1 text-neutral-500 hover:bg-neutral-200 disabled:opacity-40 disabled:hover:bg-transparent dark:text-neutral-400 dark:hover:bg-neutral-700"
+                  title="Save (⌘S)"
+                  disabled={!isDirty}
+                  onClick={() => void saveFile()}
+                >
+                  <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M2.5 2.5h9L13.5 5v8.5a.5.5 0 0 1-.5.5H3a.5.5 0 0 1-.5-.5v-11z" />
+                    <path d="M5 2.5V6h5V2.5" />
+                    <path d="M4.5 14v-4.5h7V14" />
+                  </svg>
+                </button>
+              )}
               {/* DiffEditor は folding 非対応のため File 表示のときのみ */}
               {effectiveViewMode === 'file' && (
               <button
@@ -363,6 +414,9 @@ export function App() {
               comments={comments}
               pendingReveal={pendingReveal}
               onFoldTargetsChange={handleFoldTargetsChange}
+              isEditable={isEditable}
+              onEditTargetChange={handleEditTargetChange}
+              onDirtyChange={handleDirtyChange}
               onCreateComment={handleCreateComment}
               onUpdateComment={handleUpdateComment}
               onDeleteComment={handleDeleteComment}

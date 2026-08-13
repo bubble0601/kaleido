@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process';
 import { realpathSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { resolve, sep } from 'node:path';
 import { promisify } from 'node:util';
 
@@ -63,6 +63,17 @@ export class GitContent {
       // untracked ファイルの original や、ref に存在しないパス
       return null;
     }
+  }
+
+  /** working tree の既存ファイルを上書き保存する (編集機能用) */
+  async writeWorkingFile(filepath: string, content: string): Promise<void> {
+    const repoRoot = realpathSync(resolve(this.repoRoot));
+    // 既存ファイルのみ対象 (realpathSync は存在しないパスで throw する)
+    const abs = realpathSync(resolve(repoRoot, normalizeRelPath(filepath)));
+    if (abs !== repoRoot && !abs.startsWith(`${repoRoot}${sep}`)) {
+      throw new Error('File path outside repository');
+    }
+    await writeFile(abs, content, 'utf8');
   }
 
   async readBlob(ref: string, filepath: string): Promise<Buffer> {
