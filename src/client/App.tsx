@@ -4,10 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CommentCard, CommentForm } from './components/comments/CommentWidgets';
 import { DiffView } from './components/DiffView';
 import { FileTree } from './components/FileTree';
+import { CommentsPanel } from './components/CommentsPanel';
 import { QuickOpen } from './components/QuickOpen';
 import { Toolbar } from './components/Toolbar';
 import { useDiff, useFileContent, useLint, useMeta, useTsDiagnostics } from './hooks/queries';
-import { isFileLevelComment } from '../shared/types';
+import { isFileLevelComment, type Comment, type RangeSpec } from '../shared/types';
 import { api } from './services/api';
 import { computeViewedPaths, useComments, useViewed } from './hooks/review';
 import { useSidebarResize } from './hooks/useSidebarResize';
@@ -15,7 +16,6 @@ import { useSse } from './hooks/useSse';
 import { monaco } from './monaco/setup';
 import { RangeSelector } from './components/RangeSelector';
 import { useUiStore } from './state/store';
-import { copyToClipboard, formatAllCommentsPrompt } from './utils/commentFormat';
 import { setFileOpenHandler } from './monaco/navigation';
 
 type ICodeEditor = import('monaco-editor/editor/editor.api.js').editor.ICodeEditor;
@@ -234,6 +234,54 @@ export function App() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [selectNext, selectedFile, toggleViewed, viewedPaths, sidebar, isDirty, saveFile]);
 
+  // コメント全クリア + Undo スナックバー (消えるまでの間だけ復元できる)
+  const [clearSnackbar, setClearSnackbar] = useState<{
+    comments: Comment[];
+    range: RangeSpec;
+  } | null>(null);
+  const snackbarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dismissSnackbar = useCallback(() => {
+    if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
+    snackbarTimerRef.current = null;
+    setClearSnackbar(null);
+  }, []);
+  const clearAllComments = useCallback(async () => {
+    if (!range) return;
+    try {
+      const { comments: deleted } = await api.clearComments(range);
+      await queryClient.invalidateQueries({ queryKey: ['comments'] });
+      if (deleted.length === 0) return;
+      if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
+      setClearSnackbar({ comments: deleted, range });
+      snackbarTimerRef.current = setTimeout(() => setClearSnackbar(null), 10_000);
+    } catch (error) {
+      console.error('Failed to clear comments:', error);
+    }
+  }, [range, queryClient]);
+  const undoClearComments = useCallback(async () => {
+    if (!clearSnackbar) return;
+    try {
+      await api.restoreComments(clearSnackbar.range, clearSnackbar.comments);
+      await queryClient.invalidateQueries({ queryKey: ['comments'] });
+      dismissSnackbar();
+    } catch (error) {
+      console.error('Failed to restore comments:', error);
+    }
+  }, [clearSnackbar, queryClient, dismissSnackbar]);
+
+  // コメント一覧からのジャンプ (Go to Definition と同じ経路)
+  const jumpToComment = useCallback(
+    (comment: Comment) => {
+      setPendingReveal({ path: comment.path, line: comment.startLine ?? 1, column: 1 });
+      if (files.some((f) => f.path === comment.path)) {
+        setSelectedPath(comment.path);
+      } else {
+        setBrowsePath(comment.path);
+      }
+    },
+    [files, setPendingReveal, setSelectedPath, setBrowsePath],
+  );
+
   const handleCreateComment = useCallback(
     (params: {
       side: 'original' | 'modified';
@@ -276,9 +324,8 @@ export function App() {
         }}
         viewedCount={viewedPaths.size}
         totalCount={files.length}
-        commentCount={comments.length}
-        onCopyAllComments={() => void copyToClipboard(formatAllCommentsPrompt(comments))}
       >
+        <CommentsPanel comments={comments} onJump={jumpToComment} onClearAll={() => void clearAllComments()} />
         <RangeSelector current={range} onChange={setRange} />
       </Toolbar>
       <QuickOpen
@@ -292,6 +339,29 @@ export function App() {
           }
         }}
       />
+      {clearSnackbar && (
+        <div className="fixed bottom-5 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-lg bg-neutral-800 px-4 py-2.5 text-sm text-neutral-100 shadow-2xl dark:bg-neutral-700">
+          <span>
+            Cleared {clearSnackbar.comments.length} comment
+            {clearSnackbar.comments.length === 1 ? '' : 's'}
+          </span>
+          <button
+            type="button"
+            className="font-semibold text-blue-300 hover:text-blue-200"
+            onClick={() => void undoClearComments()}
+          >
+            Undo
+          </button>
+          <button
+            type="button"
+            className="text-neutral-400 hover:text-neutral-200"
+            title="Dismiss"
+            onClick={dismissSnackbar}
+          >
+            ✕
+          </button>
+        </div>
+      )}
       <div className="flex min-h-0 flex-1">
         {!sidebar.isCollapsed && (
           <aside

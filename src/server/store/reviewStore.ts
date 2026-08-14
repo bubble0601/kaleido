@@ -118,6 +118,21 @@ export class ReviewStore {
     return target;
   }
 
+  /** 範囲のコメントを全削除し、削除したものを返す (クライアント側 Undo 用) */
+  clearComments(rangeKey: string): Comment[] {
+    const comments = this.getComments(rangeKey);
+    this.saveComments(rangeKey, []);
+    return comments;
+  }
+
+  /** クリアの Undo 用。id 重複は既存を優先して復元する */
+  restoreComments(rangeKey: string, comments: Comment[]): void {
+    const existing = this.getComments(rangeKey);
+    const existingIds = new Set(existing.map((c) => c.id));
+    const restored = [...existing, ...comments.filter((c) => !existingIds.has(c.id))];
+    this.saveComments(rangeKey, restored);
+  }
+
   deleteComment(rangeKey: string, id: string): boolean {
     const comments = this.getComments(rangeKey);
     const next = comments.filter((c) => c.id !== id);

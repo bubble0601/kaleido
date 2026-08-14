@@ -46,8 +46,6 @@ interface ToolbarProps {
   onViewModeChange: (mode: ViewMode) => void;
   viewedCount?: number;
   totalCount?: number;
-  commentCount?: number;
-  onCopyAllComments?: () => void;
   children?: React.ReactNode;
 }
 
@@ -78,8 +76,6 @@ export function Toolbar({
   onViewModeChange,
   viewedCount,
   totalCount,
-  commentCount,
-  onCopyAllComments,
   children,
 }: ToolbarProps) {
   const { theme, setTheme } = useUiStore();
@@ -114,16 +110,6 @@ export function Toolbar({
         <span className="text-xs text-neutral-500 dark:text-neutral-400">
           {viewedCount}/{totalCount} viewed
         </span>
-      )}
-      {commentCount !== undefined && commentCount > 0 && onCopyAllComments && (
-        <button
-          type="button"
-          className={BUTTON_CLASS}
-          title="Copy all comments as AI prompt"
-          onClick={onCopyAllComments}
-        >
-          Copy prompt ({commentCount})
-        </button>
       )}
       {children}
       <div className="flex overflow-hidden rounded border border-neutral-300 dark:border-neutral-700">

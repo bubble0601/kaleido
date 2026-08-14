@@ -198,6 +198,29 @@ export function createApp(ctx: AppContext): Hono {
     },
   );
 
+  // 全クリア (削除したコメントを返す。クライアント側で Undo に使う)
+  app.delete('/api/comments', zValidator('query', rangeSchema), (c) => {
+    const key = rangeKey(toRange(c.req.valid('query')));
+    return c.json({ comments: ctx.reviewStore.clearComments(key) });
+  });
+
+  const storedCommentSchema = commentBodySchema.safeExtend({
+    id: z.string().min(1),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  });
+
+  app.post(
+    '/api/comments/restore',
+    zValidator('query', rangeSchema),
+    zValidator('json', z.object({ comments: z.array(storedCommentSchema).max(1000) })),
+    (c) => {
+      const key = rangeKey(toRange(c.req.valid('query')));
+      ctx.reviewStore.restoreComments(key, c.req.valid('json').comments);
+      return c.json({ ok: true });
+    },
+  );
+
   app.delete('/api/comments/:id', zValidator('query', rangeSchema), (c) => {
     const key = rangeKey(toRange(c.req.valid('query')));
     const isDeleted = ctx.reviewStore.deleteComment(key, c.req.param('id'));

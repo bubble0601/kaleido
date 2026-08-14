@@ -123,6 +123,16 @@ export const api = {
   deleteComment: (range: RangeSpec, id: string) =>
     request<{ ok: boolean }>(`/api/comments/${id}?${rangeParams(range)}`, { method: 'DELETE' }),
 
+  clearComments: (range: RangeSpec) =>
+    request<{ comments: Comment[] }>(`/api/comments?${rangeParams(range)}`, { method: 'DELETE' }),
+
+  restoreComments: (range: RangeSpec, comments: Comment[]) =>
+    request<{ ok: boolean }>(`/api/comments/restore?${rangeParams(range)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ comments }),
+    }),
+
   getViewed: () => request<ViewedState>('/api/viewed'),
 
   setViewed: (path: string, hash: string, isViewed: boolean) =>
