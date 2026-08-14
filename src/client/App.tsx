@@ -22,6 +22,7 @@ import { useSse } from './hooks/useSse';
 import { monaco } from './monaco/setup';
 import { RangeSelector } from './components/RangeSelector';
 import { MarkdownPreview } from './components/MarkdownPreview';
+import { contentVersion, HtmlPreview } from './components/HtmlPreview';
 import { getPreviewKind } from './utils/preview';
 import { useUiStore, type PreviewMode, type SidebarTab } from './state/store';
 import { setFileOpenHandler } from './monaco/navigation';
@@ -229,7 +230,10 @@ export function App() {
   // Markdown などのプレビューの既定:
   // Changes から開いたなら比較とプレビューを並べ、Files / Docs から開いたならプレビューのみ。
   // Quick Open や定義ジャンプなど経路が分からないときは、表示中の内容から決める。
-  const previewKind = selectedFile ? getPreviewKind(selectedFile.path) : null;
+  // HTML は working tree のファイルをサーバーから配信して見せるため、
+  // 過去のコミットの内容を見ているときはプレビューを出さない (ソースと食い違うため)
+  const fileKind = selectedFile ? getPreviewKind(selectedFile.path) : null;
+  const previewKind = fileKind === 'html' && !isEditable ? null : fileKind;
   useEffect(() => setPreviewMode(null), [selectedPath, browsePath, setPreviewMode]);
   const defaultPreviewMode: PreviewMode =
     openedFrom === 'changes'
@@ -613,11 +617,18 @@ export function App() {
             )}
             {effectivePreviewMode !== 'source' && (
               <div className="min-w-0 flex-1 border-l border-neutral-200 dark:border-neutral-800">
-                <MarkdownPreview
-                  content={previewContent}
-                  path={selectedFile.path}
-                  theme={theme}
-                />
+                {previewKind === 'html' ? (
+                  <HtmlPreview
+                    path={selectedFile.path}
+                    version={contentVersion(contents.data?.modified?.content ?? '')}
+                  />
+                ) : (
+                  <MarkdownPreview
+                    content={previewContent}
+                    path={selectedFile.path}
+                    theme={theme}
+                  />
+                )}
               </div>
             )}
             </>

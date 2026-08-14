@@ -16,6 +16,7 @@ import { applyExcludes, listDirectoryFiles } from './files/tree.js';
 const VERSION = '0.1.0';
 
 const MAX_RAW_BYTES = 10 * 1024 * 1024;
+const MAX_PREVIEW_BYTES = 20 * 1024 * 1024;
 
 /** /api/raw で配信を許可する拡張子と Content-Type (画像のみ) */
 const IMAGE_CONTENT_TYPES: Record<string, string> = {
@@ -28,6 +29,28 @@ const IMAGE_CONTENT_TYPES: Record<string, string> = {
   '.bmp': 'image/bmp',
   '.ico': 'image/x-icon',
   '.svg': 'image/svg+xml',
+};
+
+/** /preview で配信する Content-Type。不明な拡張子は octet-stream にして実行させない */
+const PREVIEW_CONTENT_TYPES: Record<string, string> = {
+  ...IMAGE_CONTENT_TYPES,
+  '.html': 'text/html; charset=utf-8',
+  '.htm': 'text/html; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.txt': 'text/plain; charset=utf-8',
+  '.md': 'text/plain; charset=utf-8',
+  '.wasm': 'application/wasm',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.otf': 'font/otf',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+  '.mp3': 'audio/mpeg',
+  '.wav': 'audio/wav',
 };
 
 function extensionOf(path: string): string {
@@ -51,6 +74,43 @@ export function createApp(ctx: AppContext): Hono {
   app.onError((err, c) => {
     console.error(err);
     return c.json({ error: err instanceof Error ? err.message : 'Internal error' }, 500);
+  });
+
+  /*
+   * /preview で配信したページはスクリプトを実行できるので、そこから API を
+   * 叩かれないようにする。sandbox の iframe は opaque origin なので
+   * Origin: null が付き、ビューア本体 (同一オリジン) とは区別できる。
+   */
+  app.use('/api/*', async (c, next) => {
+    const origin = c.req.header('Origin');
+    if (origin !== undefined && origin !== new URL(c.req.url).origin) {
+      return c.json({ error: 'Cross-origin request is not allowed' }, 403);
+    }
+    await next();
+  });
+
+  /*
+   * HTML プレビュー用に、ルート配下のファイルをそのまま配信する。
+   * 相対パスの CSS / JS / 画像をページ自身が読めるようにするための経路で、
+   * iframe 側は sandbox (allow-same-origin なし) で読み込む。
+   */
+  app.get('/preview/*', async (c) => {
+    const path = decodeURIComponent(c.req.path.slice('/preview/'.length));
+    if (path.length === 0) return c.json({ error: 'File not found' }, 404);
+    let buf: Buffer;
+    try {
+      buf = await ctx.fileContent.readBlob('working', path);
+    } catch {
+      return c.json({ error: 'File not found' }, 404);
+    }
+    if (buf.length > MAX_PREVIEW_BYTES) return c.json({ error: 'File too large' }, 413);
+    return c.body(new Uint8Array(buf), 200, {
+      'Content-Type': PREVIEW_CONTENT_TYPES[extensionOf(path)] ?? 'application/octet-stream',
+      'X-Content-Type-Options': 'nosniff',
+      // opaque origin のページが自分のファイルを fetch できるようにする
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'no-store',
+    });
   });
 
   app.get('/api/meta', (c) => {

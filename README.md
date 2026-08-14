@@ -9,6 +9,7 @@ git リポジトリなら diff レビューができ、**git 管理外のディ�
 - **サイドバーの 3 タブ**: `Changes` (比較対象のファイル) / `Files` (ルート配下の全ファイル) / `Docs` (Markdown・HTML だけを絞り込んだ一覧)。git 管理外では `Changes` は出ない。`Files` だけ既定で畳んだ状態で、タブごとに全展開 / 全折りたたみを切り替えられる。開いているファイルの階層だけは自動で開く
 - **表示モード**: side-by-side diff / inline diff / ファイル単体表示を切替。比較対象外のファイルは常に working tree の内容を単体表示する
 - **Markdown プレビュー**: `.md` などはソース / ソース+プレビュー / プレビューを切替。見た目は `github-markdown-css` (light / dark をテーマに追従) + 日本語の組版調整 (約物の空き詰め・禁則強化・ぶら下げ)。既定は開いた経路で決まり、`Changes` からならソースとプレビューを並べ、`Files` / `Docs` からならプレビューのみ。幅に余裕があるときは右側に見出しの目次を出す。` ```mermaid ` のコードブロックは図として描画し、図とソースを切り替えられる。コードブロックにはコピーボタンが付く。編集中の内容はライブで反映される
+- **HTML プレビュー**: `.html` は実際にレンダリングして表示する。サーバーの `/preview` から配信するため、相対パスの CSS / JS / 画像もそのまま読め、**スクリプトも動く**。working tree のファイルを見せる仕組みなので、過去のコミットの内容を表示しているときはプレビューを出さない
 - **本物の TypeScript 型情報ホバー**: サーバー側で対象プロジェクトの tsconfig + node_modules を使って `ts.LanguageService` を起動し、hover / 型エラー / 定義ジャンプ / Find All References を提供 (Monaco 内蔵 TS ワーカーは不使用)
 - **ESLint 診断**: プロジェクトの `node_modules/.bin/eslint` を実行して行マーカー表示 (working tree を見ている範囲のみ)
 - **編集**: working tree のファイルはエディタ上で直接編集・保存できる
@@ -21,10 +22,6 @@ git リポジトリなら diff レビューができ、**git 管理外のディ�
 - **レビュー済みマーク**: 内容のハッシュをキーに保存。比較範囲を切り替えても同一内容なら既読を維持
 - **行/範囲コメント**: エディタ内インライン表示 + コメント一覧パネル。difit 互換形式で AI プロンプトとしてコピー可能
 - コメント・レビュー済み状態は **サーバー側でファイル保存** (`~/Library/Application Support/kaleido` / XDG data dir)。ブラウザを変えても保持される
-
-### 予定 (未実装)
-
-- **HTML のプレビュー**: Markdown と同じ枠組みで `.html` をレンダリング表示する
 
 ## 使い方
 
@@ -117,4 +114,5 @@ src/
 - **表示は DiffEditor 1 インスタンスに集約**: ファイル切替はモデル差し替えで行う。Markdown / HTML プレビューのようなエディタでない表示モードを足す場合は、この 1 インスタンスの外側に並置するビューとして持つ想定
 - **git は「あれば使う」層**: ルートが git の toplevel でなければ `gitDiff` / `gitRefs` は `null` になり、比較 API は空を返す。ファイル本文は常に working tree をファイルシステムから読むため、閲覧・編集・型情報は git の有無に依存しない
 - **比較なしの状態も擬似 range で表現**: `{ target: 'browse', base: 'browse' }` を 1 つの範囲として扱うことで、コメント保存キー・URL 同期・クエリキャッシュを diff モードと共通化している
-- **プレビューは sandbox iframe に隔離**: marked は生の HTML を素通しするため、`allow-same-origin` を与えない iframe に `srcdoc` で流し込む。コピーボタンのために `allow-scripts` は付けるが、CSP の `script-src 'nonce-…'` でこちらが入れた 1 本以外は実行させず、`connect-src 'none'` で通信も塞ぐ。図とソースの切り替えはスクリプトを使わず checkbox + 兄弟セレクタで行う。mermaid は iframe 内で動かせないので、親側で SVG に変換した結果だけを埋め込む (`securityLevel: 'strict'` でラベル内 HTML をサニタイズ)。スタイルは `github-markdown-css` を `?inline` で文字列として取り込み、テーマに応じて light / dark を `<style>` に埋め込む。開いているファイルのスクリプトが同一オリジンで動いて `/api/file/save` などを叩くことはない。相対画像は `/api/raw` (画像の Content-Type のみ、`nosniff` 付き) 経由で表示し、相対リンクはそのファイルをビューアの新しいタブで開く
+- **HTML プレビューはページを動かす前提で隔離**: `/preview/<path>` から配信し、`allow-scripts` 付き・`allow-same-origin` なしの iframe で読み込む。opaque origin になるのでビューア本体の DOM や localStorage には触れられず、加えて `/api/*` は `Origin` ヘッダを見て別オリジンからのリクエストを 403 にする (プレビュー中のページから `/api/file/save` を叩かれないように)。ページ自身のファイルは fetch できるよう `/preview` のレスポンスにだけ `Access-Control-Allow-Origin: *` を付ける
+- **Markdown プレビューは sandbox iframe に隔離**: marked は生の HTML を素通しするため、`allow-same-origin` を与えない iframe に `srcdoc` で流し込む。コピーボタンのために `allow-scripts` は付けるが、CSP の `script-src 'nonce-…'` でこちらが入れた 1 本以外は実行させず、`connect-src 'none'` で通信も塞ぐ。図とソースの切り替えはスクリプトを使わず checkbox + 兄弟セレクタで行う。mermaid は iframe 内で動かせないので、親側で SVG に変換した結果だけを埋め込む (`securityLevel: 'strict'` でラベル内 HTML をサニタイズ)。スタイルは `github-markdown-css` を `?inline` で文字列として取り込み、テーマに応じて light / dark を `<style>` に埋め込む。開いているファイルのスクリプトが同一オリジンで動いて `/api/file/save` などを叩くことはない。相対画像は `/api/raw` (画像の Content-Type のみ、`nosniff` 付き) 経由で表示し、相対リンクはそのファイルをビューアの新しいタブで開く
