@@ -10,8 +10,8 @@ export interface RevealTarget {
 
 export type ViewMode = 'split' | 'inline' | 'file';
 export type Theme = 'light' | 'dark';
-/** サイドバーの表示内容: 比較対象のファイル一覧 / ルート配下の全ファイル */
-export type SidebarTab = 'changes' | 'files';
+/** サイドバーの表示内容: 比較対象のファイル / ルート配下の全ファイル / 読み物 (md・html) */
+export type SidebarTab = 'changes' | 'files' | 'docs';
 /** プレビュー可能なファイルの見せ方 */
 export type PreviewMode = 'source' | 'split' | 'preview';
 
@@ -32,11 +32,14 @@ interface UiState {
   pendingReveal: RevealTarget | null;
   viewMode: ViewMode;
   sidebarTab: SidebarTab;
-  /** null のときは表示モードに応じた既定を使う (ファイルを切り替えると null に戻る) */
+  /** 直近でファイルを開いた経路。プレビューの既定モードを決めるのに使う (タブ以外からなら null) */
+  openedFrom: SidebarTab | null;
+  /** null のときは開いた経路に応じた既定を使う (ファイルを切り替えると null に戻る) */
   previewMode: PreviewMode | null;
   theme: Theme;
   setRange: (range: RangeSpec) => void;
   setSidebarTab: (tab: SidebarTab) => void;
+  setOpenedFrom: (tab: SidebarTab | null) => void;
   setPreviewMode: (mode: PreviewMode | null) => void;
   setSelectedPath: (path: string | null) => void;
   setBrowsePath: (path: string | null) => void;
@@ -52,10 +55,12 @@ export const useUiStore = create<UiState>((set) => ({
   pendingReveal: null,
   viewMode: 'split',
   sidebarTab: 'changes',
+  openedFrom: null,
   previewMode: null,
   theme: getInitialTheme(),
   setRange: (range) => set({ range, selectedPath: null, browsePath: null }),
   setSidebarTab: (sidebarTab) => set({ sidebarTab }),
+  setOpenedFrom: (openedFrom) => set({ openedFrom }),
   setPreviewMode: (previewMode) => set({ previewMode }),
   setSelectedPath: (selectedPath) => set({ selectedPath, browsePath: null }),
   setBrowsePath: (browsePath) => set({ browsePath }),

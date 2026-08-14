@@ -23,7 +23,7 @@ import { monaco } from './monaco/setup';
 import { RangeSelector } from './components/RangeSelector';
 import { MarkdownPreview } from './components/MarkdownPreview';
 import { getPreviewKind } from './utils/preview';
-import { useUiStore, type PreviewMode } from './state/store';
+import { useUiStore, type PreviewMode, type SidebarTab } from './state/store';
 import { setFileOpenHandler } from './monaco/navigation';
 
 type ICodeEditor = import('monaco-editor/editor/editor.api.js').editor.ICodeEditor;
@@ -72,11 +72,13 @@ export function App() {
     browsePath,
     viewMode,
     previewMode,
+    openedFrom,
     theme,
     setRange,
     setSelectedPath,
     setBrowsePath,
     setViewMode,
+    setOpenedFrom,
     setPreviewMode,
   } = useUiStore();
   const setPendingReveal = useUiStore((state) => state.setPendingReveal);
@@ -101,14 +103,15 @@ export function App() {
 
   /** 比較対象にあれば diff として、なければ単体ファイルとして開く */
   const openFile = useCallback(
-    (path: string) => {
+    (path: string, from: SidebarTab | null = null) => {
+      setOpenedFrom(from);
       if (files.some((f) => f.path === path)) {
         setSelectedPath(path);
       } else {
         setBrowsePath(path);
       }
     },
-    [files, setSelectedPath, setBrowsePath],
+    [files, setSelectedPath, setBrowsePath, setOpenedFrom],
   );
 
   const selectedFile = useMemo(() => {
@@ -223,13 +226,21 @@ export function App() {
   const contents = useFileContent(contentRange, selectedFile);
   const isEditable = contents.data?.modified?.ref === 'working' && !contents.data.isTooLarge;
 
-  // Markdown などのプレビュー。比較を見ているときは既定でソース、単体表示なら既定でプレビュー
+  // Markdown などのプレビューの既定:
+  // Changes から開いたなら比較とプレビューを並べ、Files / Docs から開いたならプレビューのみ。
+  // Quick Open や定義ジャンプなど経路が分からないときは、表示中の内容から決める。
   const previewKind = selectedFile ? getPreviewKind(selectedFile.path) : null;
   useEffect(() => setPreviewMode(null), [selectedPath, browsePath, setPreviewMode]);
+  const defaultPreviewMode: PreviewMode =
+    openedFrom === 'changes'
+      ? 'split'
+      : openedFrom !== null
+        ? 'preview'
+        : effectiveViewMode === 'file'
+          ? 'preview'
+          : 'split';
   const effectivePreviewMode: PreviewMode =
-    previewKind === null
-      ? 'source'
-      : (previewMode ?? (effectiveViewMode === 'file' ? 'preview' : 'source'));
+    previewKind === null ? 'source' : (previewMode ?? defaultPreviewMode);
   const previewContent = liveContent ?? contents.data?.modified?.content ?? '';
   const saveFile = useCallback(async () => {
     const editor = editTargetRef.current;
@@ -458,7 +469,10 @@ export function App() {
               browsePath={browsePath}
               viewedPaths={viewedPaths}
               commentCounts={commentCounts}
-              onSelectDiffFile={setSelectedPath}
+              onSelectDiffFile={(path) => {
+                setOpenedFrom('changes');
+                setSelectedPath(path);
+              }}
               onOpenFile={openFile}
               onToggleViewed={(file, isViewed) => toggleViewed.mutate({ file, isViewed })}
             />

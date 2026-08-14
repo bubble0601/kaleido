@@ -3,19 +3,21 @@ import { useMemo } from 'react';
 import type { DiffFileMeta } from '../../shared/types';
 import { useAllFiles } from '../hooks/queries';
 import { useUiStore, type SidebarTab } from '../state/store';
+import { isDocumentPath } from '../utils/preview';
 import { FileTree, useTreeFolding, type FileTreeEntry, type TreeFolding } from './FileTree';
 
 interface SidebarProps {
   /** 比較対象のファイル (非 git では常に空) */
   diffFiles: DiffFileMeta[];
-  /** 比較機能が使えるか。false のときは Files タブのみ */
+  /** 比較機能が使えるか。false のときは Changes タブを出さない */
   isGitRepo: boolean;
   selectedPath: string | null;
   browsePath: string | null;
   viewedPaths: Set<string>;
   commentCounts: Map<string, number>;
   onSelectDiffFile: (path: string) => void;
-  onOpenFile: (path: string) => void;
+  /** どのタブから開いたかは、プレビューの既定モードの判断に使われる */
+  onOpenFile: (path: string, from: SidebarTab) => void;
   onToggleViewed: (file: DiffFileMeta, isViewed: boolean) => void;
 }
 
@@ -32,41 +34,41 @@ export function Sidebar({
 }: SidebarProps) {
   const storedTab = useUiStore((state) => state.sidebarTab);
   const setSidebarTab = useUiStore((state) => state.setSidebarTab);
-  const tab: SidebarTab = isGitRepo ? storedTab : 'files';
+  const tab: SidebarTab = !isGitRepo && storedTab === 'changes' ? 'files' : storedTab;
 
-  const allFiles = useAllFiles(tab === 'files');
-  const entries = useMemo<FileTreeEntry[]>(
-    () => (allFiles.data?.paths ?? []).map((path) => ({ path })),
-    [allFiles.data],
+  const allFiles = useAllFiles(tab !== 'changes');
+  const paths = useMemo(() => allFiles.data?.paths ?? [], [allFiles.data]);
+  const fileEntries = useMemo<FileTreeEntry[]>(
+    () => paths.map((path) => ({ path })),
+    [paths],
+  );
+  const docEntries = useMemo<FileTreeEntry[]>(
+    () => paths.filter(isDocumentPath).map((path) => ({ path })),
+    [paths],
   );
 
-  // 比較対象は数が知れているので開いた状態、全ファイルは畳んだ状態から始める
+  // 比較対象と読み物は数が知れているので開いた状態、全ファイルは畳んだ状態から始める
+  const activePath = browsePath ?? selectedPath;
   const changesFolding = useTreeFolding(true, browsePath ? null : selectedPath);
-  const filesFolding = useTreeFolding(false, browsePath ?? selectedPath);
-  const folding = tab === 'changes' ? changesFolding : filesFolding;
+  const filesFolding = useTreeFolding(false, activePath);
+  const docsFolding = useTreeFolding(true, activePath);
+  const folding =
+    tab === 'changes' ? changesFolding : tab === 'docs' ? docsFolding : filesFolding;
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex shrink-0 items-center border-b border-neutral-200 text-xs dark:border-neutral-800">
-        {isGitRepo ? (
-          <>
-            <TabButton
-              label="Changes"
-              count={diffFiles.length}
-              isActive={tab === 'changes'}
-              onClick={() => setSidebarTab('changes')}
-            />
-            <TabButton
-              label="Files"
-              isActive={tab === 'files'}
-              onClick={() => setSidebarTab('files')}
-            />
-          </>
-        ) : (
-          <span className="px-4 py-1.5 font-medium text-neutral-800 dark:text-neutral-100">
-            Files
-          </span>
+        {isGitRepo && (
+          <TabButton
+            label="Changes"
+            count={diffFiles.length}
+            isActive={tab === 'changes'}
+            onClick={() => setSidebarTab('changes')}
+          />
         )}
+        <TabButton label="Files" isActive={tab === 'files'} onClick={() => setSidebarTab('files')} />
+        {/* 件数はファイル一覧を取得済みのときしか分からないため出さない */}
+        <TabButton label="Docs" isActive={tab === 'docs'} onClick={() => setSidebarTab('docs')} />
         <div className="flex-1" />
         <FoldAllButton folding={folding} />
       </div>
@@ -88,16 +90,28 @@ export function Sidebar({
           )
         ) : allFiles.isLoading ? (
           <Placeholder>Loading…</Placeholder>
-        ) : entries.length === 0 ? (
+        ) : tab === 'docs' ? (
+          docEntries.length === 0 ? (
+            <Placeholder>No Markdown or HTML files</Placeholder>
+          ) : (
+            <FileTree
+              files={docEntries}
+              folding={folding}
+              selectedPath={activePath}
+              commentCounts={commentCounts}
+              onSelect={(path) => onOpenFile(path, tab)}
+            />
+          )
+        ) : fileEntries.length === 0 ? (
           <Placeholder>No files</Placeholder>
         ) : (
           <>
             <FileTree
-              files={entries}
+              files={fileEntries}
               folding={folding}
-              selectedPath={browsePath ?? selectedPath}
+              selectedPath={activePath}
               commentCounts={commentCounts}
-              onSelect={onOpenFile}
+              onSelect={(path) => onOpenFile(path, tab)}
             />
             {allFiles.data?.isTruncated && (
               <Placeholder>

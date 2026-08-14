@@ -2,11 +2,21 @@
 export type PreviewKind = 'markdown';
 
 const MARKDOWN_EXTENSIONS = ['.md', '.markdown', '.mdown', '.mkd', '.mkdn'];
+const HTML_EXTENSIONS = ['.html', '.htm'];
 
 export function getPreviewKind(path: string): PreviewKind | null {
   const lower = path.toLowerCase();
   if (MARKDOWN_EXTENSIONS.some((ext) => lower.endsWith(ext))) return 'markdown';
   return null;
+}
+
+/**
+ * 「読み物」として扱うファイルか (Docs タブの絞り込み)。
+ * HTML はまだレンダリング表示に対応しておらずソース表示になる。
+ */
+export function isDocumentPath(path: string): boolean {
+  const lower = path.toLowerCase();
+  return [...MARKDOWN_EXTENSIONS, ...HTML_EXTENSIONS].some((ext) => lower.endsWith(ext));
 }
 
 /**
