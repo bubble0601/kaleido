@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CommentCard, CommentForm } from './components/comments/CommentWidgets';
 import { DiffView } from './components/DiffView';
 import { Sidebar } from './components/Sidebar';
+import { ActivityBar } from './components/ActivityBar';
 import { CommentsPanel } from './components/CommentsPanel';
 import { QuickOpen } from './components/QuickOpen';
 import { Toolbar } from './components/Toolbar';
@@ -288,6 +289,24 @@ export function App() {
 
   const sidebar = useSidebarResize();
 
+  // Activity Bar の選択。非 git では Changes を出さないので files に寄せる。
+  // 選択中のものをもう一度押したらサイドバーを畳む (VS Code と同じ)
+  const storedSidebarTab = useUiStore((state) => state.sidebarTab);
+  const setStoredSidebarTab = useUiStore((state) => state.setSidebarTab);
+  const sidebarTab: SidebarTab =
+    !isGitRepo && storedSidebarTab === 'changes' ? 'files' : storedSidebarTab;
+  const selectSidebarTab = useCallback(
+    (next: SidebarTab) => {
+      if (next === sidebarTab && !sidebar.isCollapsed) {
+        sidebar.toggle();
+        return;
+      }
+      setStoredSidebarTab(next);
+      if (sidebar.isCollapsed) sidebar.toggle();
+    },
+    [sidebarTab, sidebar, setStoredSidebarTab],
+  );
+
   const { query: viewedQuery, toggle: toggleViewed } = useViewed();
   const viewedPaths = useMemo(
     () => computeViewedPaths(files, viewedQuery.data?.entries),
@@ -461,6 +480,12 @@ export function App() {
         </div>
       )}
       <div className="flex min-h-0 flex-1">
+        <ActivityBar
+          activeTab={sidebarTab}
+          isGitRepo={isGitRepo}
+          isCollapsed={sidebar.isCollapsed}
+          onSelect={selectSidebarTab}
+        />
         {!sidebar.isCollapsed && (
           <aside
             style={{ width: sidebar.width }}
@@ -468,7 +493,7 @@ export function App() {
           >
             <Sidebar
               diffFiles={files}
-              isGitRepo={isGitRepo}
+              tab={sidebarTab}
               selectedPath={selectedPath}
               browsePath={browsePath}
               viewedPaths={viewedPaths}

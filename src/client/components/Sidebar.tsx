@@ -2,15 +2,21 @@ import { useMemo } from 'react';
 
 import type { DiffFileMeta } from '../../shared/types';
 import { useAllFiles } from '../hooks/queries';
-import { useUiStore, type SidebarTab } from '../state/store';
+import type { SidebarTab } from '../state/store';
 import { isDocumentPath } from '../utils/preview';
 import { FileTree, useTreeFolding, type FileTreeEntry, type TreeFolding } from './FileTree';
+
+const SECTION_LABELS: Record<SidebarTab, string> = {
+  changes: 'Changes',
+  files: 'Files',
+  docs: 'Docs',
+};
 
 interface SidebarProps {
   /** 比較対象のファイル (非 git では常に空) */
   diffFiles: DiffFileMeta[];
-  /** 比較機能が使えるか。false のときは Changes タブを出さない */
-  isGitRepo: boolean;
+  /** Activity Bar で選ばれている表示内容 */
+  tab: SidebarTab;
   selectedPath: string | null;
   browsePath: string | null;
   viewedPaths: Set<string>;
@@ -23,7 +29,7 @@ interface SidebarProps {
 
 export function Sidebar({
   diffFiles,
-  isGitRepo,
+  tab,
   selectedPath,
   browsePath,
   viewedPaths,
@@ -32,10 +38,6 @@ export function Sidebar({
   onOpenFile,
   onToggleViewed,
 }: SidebarProps) {
-  const storedTab = useUiStore((state) => state.sidebarTab);
-  const setSidebarTab = useUiStore((state) => state.setSidebarTab);
-  const tab: SidebarTab = !isGitRepo && storedTab === 'changes' ? 'files' : storedTab;
-
   const allFiles = useAllFiles(tab !== 'changes');
   const paths = useMemo(() => allFiles.data?.paths ?? [], [allFiles.data]);
   const fileEntries = useMemo<FileTreeEntry[]>(
@@ -57,18 +59,10 @@ export function Sidebar({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex shrink-0 items-center border-b border-neutral-200 text-xs dark:border-neutral-800">
-        {isGitRepo && (
-          <TabButton
-            label="Changes"
-            count={diffFiles.length}
-            isActive={tab === 'changes'}
-            onClick={() => setSidebarTab('changes')}
-          />
-        )}
-        <TabButton label="Files" isActive={tab === 'files'} onClick={() => setSidebarTab('files')} />
-        {/* 件数はファイル一覧を取得済みのときしか分からないため出さない */}
-        <TabButton label="Docs" isActive={tab === 'docs'} onClick={() => setSidebarTab('docs')} />
+      <div className="flex h-9 shrink-0 items-center gap-1.5 pl-4 pr-1 text-[11px] font-medium tracking-wide text-neutral-500 uppercase dark:text-neutral-400">
+        <span>{SECTION_LABELS[tab]}</span>
+        {/* Files / Docs の件数は一覧を取得済みのときしか分からないため出さない */}
+        {tab === 'changes' && <span className="opacity-70">{diffFiles.length}</span>}
         <div className="flex-1" />
         <FoldAllButton folding={folding} />
       </div>
@@ -123,33 +117,6 @@ export function Sidebar({
         )}
       </div>
     </div>
-  );
-}
-
-function TabButton({
-  label,
-  count,
-  isActive,
-  onClick,
-}: {
-  label: string;
-  count?: number;
-  isActive: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      className={`border-b-2 px-4 py-1.5 ${
-        isActive
-          ? 'border-blue-500 font-medium text-neutral-800 dark:text-neutral-100'
-          : 'border-transparent text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200'
-      }`}
-      onClick={onClick}
-    >
-      {label}
-      {count !== undefined && <span className="ml-1 opacity-60">{count}</span>}
-    </button>
   );
 }
 
