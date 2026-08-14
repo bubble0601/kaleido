@@ -1,0 +1,5 @@
+{
+  "skillOverrides": {
+    "commit-confirm": "user-invocable-only"
+  }
+}
