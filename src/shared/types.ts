@@ -72,6 +72,17 @@ export interface FilesResponse {
   isTruncated: boolean;
 }
 
+export interface DocFileMeta {
+  path: string;
+  /** 更新日時 (epoch ミリ秒)。更新日時順の並べ替えに使う */
+  mtime: number;
+}
+
+export interface DocsResponse {
+  files: DocFileMeta[];
+  isTruncated: boolean;
+}
+
 export interface RangesResponse {
   branches: string[];
   recentCommits: { sha: string; shortSha: string; subject: string; date: string }[];

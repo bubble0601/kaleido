@@ -3,6 +3,7 @@ import type {
   CommentCreateRequest,
   DiffFileMeta,
   DiffResponse,
+  DocsResponse,
   FileContentResponse,
   FilesResponse,
   HoverRequest,
@@ -43,6 +44,8 @@ export const api = {
   getRanges: () => request<RangesResponse>('/api/ranges'),
 
   getFiles: () => request<FilesResponse>('/api/files'),
+
+  getDocs: () => request<DocsResponse>('/api/docs'),
 
   saveFile: (path: string, content: string) =>
     request<{ ok: boolean }>('/api/file/save', {

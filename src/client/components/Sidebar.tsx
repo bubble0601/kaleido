@@ -1,9 +1,8 @@
 import { useMemo } from 'react';
 
 import type { DiffFileMeta } from '../../shared/types';
-import { useAllFiles } from '../hooks/queries';
+import { useAllFiles, useDocFiles } from '../hooks/queries';
 import type { SidebarTab } from '../state/store';
-import { isDocumentPath } from '../utils/preview';
 import { FileTree, useTreeFolding, type FileTreeEntry, type TreeFolding } from './FileTree';
 
 const SECTION_LABELS: Record<SidebarTab, string> = {
@@ -38,22 +37,19 @@ export function Sidebar({
   onOpenFile,
   onToggleViewed,
 }: SidebarProps) {
-  const allFiles = useAllFiles(tab !== 'changes');
-  const paths = useMemo(() => allFiles.data?.paths ?? [], [allFiles.data]);
+  const allFiles = useAllFiles(tab === 'files');
+  const docFiles = useDocFiles(tab === 'docs');
   const fileEntries = useMemo<FileTreeEntry[]>(
-    () => paths.map((path) => ({ path })),
-    [paths],
+    () => (allFiles.data?.paths ?? []).map((path) => ({ path })),
+    [allFiles.data],
   );
-  const docEntries = useMemo<FileTreeEntry[]>(
-    () => paths.filter(isDocumentPath).map((path) => ({ path })),
-    [paths],
-  );
+  const docEntries = useMemo<FileTreeEntry[]>(() => docFiles.data?.files ?? [], [docFiles.data]);
 
-  // 比較対象と読み物は数が知れているので開いた状態、全ファイルは畳んだ状態から始める
+  // 比較対象は数が知れているので開いた状態、全ファイルと読み物は畳んだ状態から始める
   const activePath = browsePath ?? selectedPath;
   const changesFolding = useTreeFolding(true, browsePath ? null : selectedPath);
   const filesFolding = useTreeFolding(false, activePath);
-  const docsFolding = useTreeFolding(true, activePath);
+  const docsFolding = useTreeFolding(false, activePath);
   const folding =
     tab === 'changes' ? changesFolding : tab === 'docs' ? docsFolding : filesFolding;
 
@@ -82,10 +78,10 @@ export function Sidebar({
               onToggleViewed={onToggleViewed}
             />
           )
-        ) : allFiles.isLoading ? (
-          <Placeholder>Loading…</Placeholder>
         ) : tab === 'docs' ? (
-          docEntries.length === 0 ? (
+          docFiles.isLoading ? (
+            <Placeholder>Loading…</Placeholder>
+          ) : docEntries.length === 0 ? (
             <Placeholder>No Markdown or HTML files</Placeholder>
           ) : (
             <FileTree
@@ -94,8 +90,11 @@ export function Sidebar({
               selectedPath={activePath}
               commentCounts={commentCounts}
               onSelect={(path) => onOpenFile(path, tab)}
+              sort="mtime"
             />
           )
+        ) : allFiles.isLoading ? (
+          <Placeholder>Loading…</Placeholder>
         ) : fileEntries.length === 0 ? (
           <Placeholder>No files</Placeholder>
         ) : (

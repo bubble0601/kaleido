@@ -1,20 +1,13 @@
+import { HTML_EXTENSIONS, MARKDOWN_EXTENSIONS } from '../../shared/documents';
+
 /** レンダリング結果を表示できるファイル種別 */
 export type PreviewKind = 'markdown' | 'html';
-
-const MARKDOWN_EXTENSIONS = ['.md', '.markdown', '.mdown', '.mkd', '.mkdn'];
-const HTML_EXTENSIONS = ['.html', '.htm'];
 
 export function getPreviewKind(path: string): PreviewKind | null {
   const lower = path.toLowerCase();
   if (MARKDOWN_EXTENSIONS.some((ext) => lower.endsWith(ext))) return 'markdown';
   if (HTML_EXTENSIONS.some((ext) => lower.endsWith(ext))) return 'html';
   return null;
-}
-
-/** 「読み物」として扱うファイルか (Docs タブの絞り込み) */
-export function isDocumentPath(path: string): boolean {
-  const lower = path.toLowerCase();
-  return [...MARKDOWN_EXTENSIONS, ...HTML_EXTENSIONS].some((ext) => lower.endsWith(ext));
 }
 
 /**

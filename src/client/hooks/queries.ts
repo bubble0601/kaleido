@@ -28,6 +28,16 @@ export function useAllFiles(isEnabled = true) {
   });
 }
 
+/** Docs タブ用の一覧 (gitignore されたものも含み、更新日時付き) */
+export function useDocFiles(isEnabled = true) {
+  return useQuery({
+    queryKey: ['docs'],
+    queryFn: api.getDocs,
+    enabled: isEnabled,
+    staleTime: 30_000,
+  });
+}
+
 export function useDiff(range: RangeSpec | null) {
   return useQuery({
     queryKey: ['diff', range],

@@ -11,6 +11,8 @@ import { FOLDER_ICON, FOLDER_OPENED_ICON, getFileTypeIconName } from '../utils/f
 export interface FileTreeEntry {
   path: string;
   status?: FileStatus;
+  /** 更新日時 (epoch ミリ秒)。sort='mtime' のときだけ使う */
+  mtime?: number;
 }
 
 interface TreeDir<T> {
@@ -35,7 +37,9 @@ const STATUS_STYLE: Record<FileStatus, { letter: string; className: string }> = 
   renamed: { letter: 'R', className: 'text-blue-500 dark:text-blue-400' },
 };
 
-function buildTree<T extends FileTreeEntry>(files: T[]): TreeNode<T>[] {
+export type TreeSort = 'name' | 'mtime';
+
+function buildTree<T extends FileTreeEntry>(files: T[], sort: TreeSort): TreeNode<T>[] {
   const root: TreeDir<T> = { kind: 'dir', name: '', path: '', children: [] };
   for (const file of files) {
     const segments = file.path.split('/');
@@ -74,7 +78,27 @@ function buildTree<T extends FileTreeEntry>(files: T[]): TreeNode<T>[] {
         return a.name.localeCompare(b.name);
       })
       .map((n) => (n.kind === 'dir' ? { ...n, children: sortNodes(n.children) } : n));
-  return sortNodes(compact(root).children);
+
+  // 更新日時順。ディレクトリは配下で最も新しいファイルの日時で並べる
+  const sortByMtime = (nodes: TreeNode<T>[]): { nodes: TreeNode<T>[]; mtime: number } => {
+    const scored = nodes.map((node) => {
+      if (node.kind === 'file') return { node, mtime: node.file.mtime ?? 0 };
+      const child = sortByMtime(node.children);
+      return { node: { ...node, children: child.nodes }, mtime: child.mtime };
+    });
+    scored.sort((a, b) => {
+      if (a.node.kind !== b.node.kind) return a.node.kind === 'dir' ? -1 : 1;
+      if (a.mtime !== b.mtime) return b.mtime - a.mtime;
+      return a.node.name.localeCompare(b.node.name);
+    });
+    return {
+      nodes: scored.map((entry) => entry.node),
+      mtime: scored.reduce((max, entry) => Math.max(max, entry.mtime), 0),
+    };
+  };
+
+  const compacted = compact(root).children;
+  return sort === 'mtime' ? sortByMtime(compacted).nodes : sortNodes(compacted);
 }
 
 export interface TreeFolding {
@@ -147,6 +171,8 @@ interface FileTreeProps<T extends FileTreeEntry> {
   commentCounts?: Map<string, number>;
   onSelect: (path: string) => void;
   onToggleViewed?: (file: T, isViewed: boolean) => void;
+  /** 並び順。既定は名前順 */
+  sort?: TreeSort;
 }
 
 export function FileTree<T extends FileTreeEntry>({
@@ -157,8 +183,9 @@ export function FileTree<T extends FileTreeEntry>({
   commentCounts,
   onSelect,
   onToggleViewed,
+  sort = 'name',
 }: FileTreeProps<T>) {
-  const tree = useMemo(() => buildTree(files), [files]);
+  const tree = useMemo(() => buildTree(files, sort), [files, sort]);
   return (
     <div className="py-1 text-[13px] leading-6">
       <TreeLevel
