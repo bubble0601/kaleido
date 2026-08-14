@@ -76,15 +76,23 @@ export function RangeSelector({ current, onChange }: RangeSelectorProps) {
     <div ref={containerRef} className="relative">
       <button
         type="button"
-        className="flex items-center gap-1 rounded border border-neutral-300 bg-white px-2.5 py-1 text-xs text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
-        title={describeRange(current)}
+        className="flex w-full items-center gap-1 rounded border border-neutral-300 bg-white px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
+        title={`Compare: ${describeRange(current)}`}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span className="max-w-[200px] truncate font-mono">{describeShortRange(current)}</span>
-        <span className="text-[10px]">▾</span>
+        <svg viewBox="0 0 16 16" className="size-3.5 shrink-0 opacity-70" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <circle cx="4" cy="12" r="1.8" />
+          <circle cx="12" cy="4" r="1.8" />
+          <path d="M4 10.2V6a1.5 1.5 0 0 1 1.5-1.5h4.7" />
+          <path d="M12 5.8V10a1.5 1.5 0 0 1-1.5 1.5H5.8" />
+        </svg>
+        <span className="min-w-0 flex-1 truncate text-left font-mono">
+          {describeShortRange(current)}
+        </span>
+        <span className="shrink-0 text-[10px]">▾</span>
       </button>
       {isOpen && (
-        <div className="absolute right-0 top-8 z-50 max-h-[70vh] w-96 overflow-y-auto rounded border border-neutral-300 bg-white py-1 shadow-xl dark:border-neutral-700 dark:bg-neutral-900">
+        <div className="absolute left-0 top-7 z-50 max-h-[70vh] w-96 max-w-[calc(100vw-5rem)] overflow-y-auto rounded border border-neutral-300 bg-white py-1 shadow-xl dark:border-neutral-700 dark:bg-neutral-900">
           <OptionGroup title="Quick" options={quickOptions} current={current} onSelect={select} />
           {branchOptions.length > 0 && (
             <OptionGroup title="Branches" options={branchOptions} current={current} onSelect={select} />

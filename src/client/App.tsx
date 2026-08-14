@@ -21,7 +21,6 @@ import { computeViewedPaths, useComments, useViewed } from './hooks/review';
 import { useSidebarResize } from './hooks/useSidebarResize';
 import { useSse } from './hooks/useSse';
 import { monaco } from './monaco/setup';
-import { RangeSelector } from './components/RangeSelector';
 import { MarkdownPreview } from './components/MarkdownPreview';
 import { contentVersion, HtmlPreview } from './components/HtmlPreview';
 import { getPreviewKind } from './utils/preview';
@@ -445,11 +444,8 @@ export function App() {
           setModeOverridePath(selectedPath);
         }}
         isDiffAvailable={!isBrowseRange(range)}
-        viewedCount={viewedPaths.size}
-        totalCount={files.length}
       >
         <CommentsPanel comments={comments} onJump={jumpToComment} onClearAll={() => void clearAllComments()} />
-        {isGitRepo && <RangeSelector current={range} onChange={setRange} />}
       </Toolbar>
       <QuickOpen
         isOpen={isQuickOpenVisible}
@@ -498,6 +494,8 @@ export function App() {
               browsePath={browsePath}
               viewedPaths={viewedPaths}
               commentCounts={commentCounts}
+              range={range}
+              onRangeChange={setRange}
               onSelectDiffFile={(path) => {
                 setOpenedFrom('changes');
                 setSelectedPath(path);

@@ -18,7 +18,7 @@ git リポジトリなら diff レビューができ、**git 管理外のディ�
 
 ### レビュー (git リポジトリのみ)
 
-- **比較範囲の切替**: working tree / staged / commit / branch (merge-base) を UI から変更
+- **比較範囲の切替**: working tree / staged / commit / branch (merge-base) を `Changes` パネル上部のセレクタから変更
 - **レビュー済みマーク**: 内容のハッシュをキーに保存。比較範囲を切り替えても同一内容なら既読を維持
 - **行/範囲コメント**: エディタ内インライン表示 + コメント一覧パネル。difit 互換形式で AI プロンプトとしてコピー可能
 - コメント・レビュー済み状態は **サーバー側でファイル保存** (`~/Library/Application Support/kaleido` / XDG data dir)。ブラウザを変えても保持される

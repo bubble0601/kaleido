@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
 
-import type { DiffFileMeta } from '../../shared/types';
+import type { DiffFileMeta, RangeSpec } from '../../shared/types';
 import { useAllFiles, useDocFiles } from '../hooks/queries';
 import type { SidebarTab } from '../state/store';
 import { FileTree, useTreeFolding, type FileTreeEntry, type TreeFolding } from './FileTree';
+import { RangeSelector } from './RangeSelector';
 
 const SECTION_LABELS: Record<SidebarTab, string> = {
   changes: 'Changes',
@@ -20,6 +21,9 @@ interface SidebarProps {
   browsePath: string | null;
   viewedPaths: Set<string>;
   commentCounts: Map<string, number>;
+  /** 比較範囲 (Changes のときだけ使う) */
+  range: RangeSpec;
+  onRangeChange: (range: RangeSpec) => void;
   onSelectDiffFile: (path: string) => void;
   /** どのタブから開いたかは、プレビューの既定モードの判断に使われる */
   onOpenFile: (path: string, from: SidebarTab) => void;
@@ -33,6 +37,8 @@ export function Sidebar({
   browsePath,
   viewedPaths,
   commentCounts,
+  range,
+  onRangeChange,
   onSelectDiffFile,
   onOpenFile,
   onToggleViewed,
@@ -58,10 +64,21 @@ export function Sidebar({
       <div className="flex h-9 shrink-0 items-center gap-1.5 pl-4 pr-1 text-[11px] font-medium tracking-wide text-neutral-500 uppercase dark:text-neutral-400">
         <span>{SECTION_LABELS[tab]}</span>
         {/* Files / Docs の件数は一覧を取得済みのときしか分からないため出さない */}
-        {tab === 'changes' && <span className="opacity-70">{diffFiles.length}</span>}
+        {tab === 'changes' && diffFiles.length > 0 && (
+          <span className="opacity-70">
+            {viewedPaths.size}/{diffFiles.length} viewed
+          </span>
+        )}
         <div className="flex-1" />
         <FoldAllButton folding={folding} />
       </div>
+
+      {/* 比較範囲は Changes だけのものなので、ここに置く (ツリーの外＝クリップされない位置) */}
+      {tab === 'changes' && (
+        <div className="shrink-0 px-2 pb-2">
+          <RangeSelector current={range} onChange={onRangeChange} />
+        </div>
+      )}
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {tab === 'changes' ? (

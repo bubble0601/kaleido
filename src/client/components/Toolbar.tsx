@@ -46,8 +46,6 @@ interface ToolbarProps {
   onViewModeChange: (mode: ViewMode) => void;
   /** false のとき表示モード切替を隠す (比較のないファイル閲覧) */
   isDiffAvailable?: boolean;
-  viewedCount?: number;
-  totalCount?: number;
   children?: React.ReactNode;
 }
 
@@ -77,8 +75,6 @@ export function Toolbar({
   viewMode,
   onViewModeChange,
   isDiffAvailable = true,
-  viewedCount,
-  totalCount,
   children,
 }: ToolbarProps) {
   const { theme, setTheme } = useUiStore();
@@ -109,11 +105,6 @@ export function Toolbar({
       )}
       <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">kaleido</span>
       <div className="flex-1" />
-      {totalCount !== undefined && totalCount > 0 && (
-        <span className="text-xs text-neutral-500 dark:text-neutral-400">
-          {viewedCount}/{totalCount} viewed
-        </span>
-      )}
       {children}
       {isDiffAvailable && (
       <div className="flex overflow-hidden rounded border border-neutral-300 dark:border-neutral-700">
