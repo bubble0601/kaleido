@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import type { DiffFileMeta } from '../../shared/types';
 import { useAllFiles } from '../hooks/queries';
 import { useUiStore, type SidebarTab } from '../state/store';
-import { FileTree, type FileTreeEntry } from './FileTree';
+import { FileTree, useTreeFolding, type FileTreeEntry, type TreeFolding } from './FileTree';
 
 interface SidebarProps {
   /** 比較対象のファイル (非 git では常に空) */
@@ -40,23 +40,36 @@ export function Sidebar({
     [allFiles.data],
   );
 
+  // 比較対象は数が知れているので開いた状態、全ファイルは畳んだ状態から始める
+  const changesFolding = useTreeFolding(true, browsePath ? null : selectedPath);
+  const filesFolding = useTreeFolding(false, browsePath ?? selectedPath);
+  const folding = tab === 'changes' ? changesFolding : filesFolding;
+
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {isGitRepo && (
-        <div className="flex shrink-0 border-b border-neutral-200 text-xs dark:border-neutral-800">
-          <TabButton
-            label="Changes"
-            count={diffFiles.length}
-            isActive={tab === 'changes'}
-            onClick={() => setSidebarTab('changes')}
-          />
-          <TabButton
-            label="Files"
-            isActive={tab === 'files'}
-            onClick={() => setSidebarTab('files')}
-          />
-        </div>
-      )}
+      <div className="flex shrink-0 items-center border-b border-neutral-200 text-xs dark:border-neutral-800">
+        {isGitRepo ? (
+          <>
+            <TabButton
+              label="Changes"
+              count={diffFiles.length}
+              isActive={tab === 'changes'}
+              onClick={() => setSidebarTab('changes')}
+            />
+            <TabButton
+              label="Files"
+              isActive={tab === 'files'}
+              onClick={() => setSidebarTab('files')}
+            />
+          </>
+        ) : (
+          <span className="px-4 py-1.5 font-medium text-neutral-800 dark:text-neutral-100">
+            Files
+          </span>
+        )}
+        <div className="flex-1" />
+        <FoldAllButton folding={folding} />
+      </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {tab === 'changes' ? (
@@ -65,6 +78,7 @@ export function Sidebar({
           ) : (
             <FileTree
               files={diffFiles}
+              folding={folding}
               selectedPath={browsePath ? null : selectedPath}
               viewedPaths={viewedPaths}
               commentCounts={commentCounts}
@@ -80,6 +94,7 @@ export function Sidebar({
           <>
             <FileTree
               files={entries}
+              folding={folding}
               selectedPath={browsePath ?? selectedPath}
               commentCounts={commentCounts}
               onSelect={onOpenFile}
@@ -111,7 +126,7 @@ function TabButton({
   return (
     <button
       type="button"
-      className={`flex-1 border-b-2 px-3 py-1.5 ${
+      className={`border-b-2 px-4 py-1.5 ${
         isActive
           ? 'border-blue-500 font-medium text-neutral-800 dark:text-neutral-100'
           : 'border-transparent text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200'
@@ -120,6 +135,32 @@ function TabButton({
     >
       {label}
       {count !== undefined && <span className="ml-1 opacity-60">{count}</span>}
+    </button>
+  );
+}
+
+function FoldAllButton({ folding }: { folding: TreeFolding }) {
+  const isExpanded = folding.isExpandedByDefault;
+  return (
+    <button
+      type="button"
+      className="mr-1 rounded p-1 text-neutral-500 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:bg-neutral-700"
+      title={isExpanded ? 'Collapse all folders' : 'Expand all folders'}
+      onClick={() => (isExpanded ? folding.collapseAll() : folding.expandAll())}
+    >
+      <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        {isExpanded ? (
+          <>
+            <path d="M4 7l4-4 4 4" />
+            <path d="M4 9l4 4 4-4" />
+          </>
+        ) : (
+          <>
+            <path d="M4 2l4 4 4-4" />
+            <path d="M4 14l4-4 4 4" />
+          </>
+        )}
+      </svg>
     </button>
   );
 }

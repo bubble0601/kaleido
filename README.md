@@ -6,7 +6,7 @@ git リポジトリなら diff レビューができ、**git 管理外のディ�
 
 ### 表示 (viewer)
 
-- **サイドバーの 2 タブ**: `Changes` (比較対象のファイル) / `Files` (ルート配下の全ファイルツリー)。git 管理外では `Files` のみ
+- **サイドバーの 2 タブ**: `Changes` (比較対象のファイル) / `Files` (ルート配下の全ファイルツリー)。git 管理外では `Files` のみ。`Files` は既定で畳んだ状態で、タブごとに全展開 / 全折りたたみを切り替えられる。開いているファイルの階層だけは自動で開く
 - **表示モード**: side-by-side diff / inline diff / ファイル単体表示を切替。比較対象外のファイルは常に working tree の内容を単体表示する
 - **Markdown プレビュー**: `.md` などはソース / ソース+プレビュー / プレビューを切替。見た目は `github-markdown-css` (light / dark をテーマに追従) + 日本語の組版調整 (約物の空き詰め・禁則強化・ぶら下げ)。単体表示では既定でプレビュー、diff 表示では既定でソース。編集中の内容はライブで反映される
 - **本物の TypeScript 型情報ホバー**: サーバー側で対象プロジェクトの tsconfig + node_modules を使って `ts.LanguageService` を起動し、hover / 型エラー / 定義ジャンプ / Find All References を提供 (Monaco 内蔵 TS ワーカーは不使用)

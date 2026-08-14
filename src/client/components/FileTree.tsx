@@ -1,5 +1,5 @@
 import { Icon } from '@iconify/react';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { FileStatus } from '../../shared/types';
 import { FOLDER_ICON, FOLDER_OPENED_ICON, getFileTypeIconName } from '../utils/fileTypeIcons';
@@ -77,8 +77,69 @@ function buildTree<T extends FileTreeEntry>(files: T[]): TreeNode<T>[] {
   return sortNodes(compact(root).children);
 }
 
+export interface TreeFolding {
+  isDirOpen: (path: string) => boolean;
+  toggleDir: (path: string) => void;
+  /** 既定で開いた状態か。ボタンの向きの判定に使う */
+  isExpandedByDefault: boolean;
+  collapseAll: () => void;
+  expandAll: () => void;
+}
+
+function ancestorPaths(filePath: string): string[] {
+  const segments = filePath.split('/');
+  segments.pop();
+  return segments.map((_, i) => segments.slice(0, i + 1).join('/'));
+}
+
+/**
+ * ツリーの開閉状態。個別の開閉は上書きとして持ち、
+ * fold all / unfold all は「既定値」の方を切り替えて上書きを捨てる。
+ * 選択中のファイルは常に見えるよう、その祖先だけ自動で開く。
+ */
+export function useTreeFolding(
+  isInitiallyExpanded: boolean,
+  selectedPath: string | null,
+): TreeFolding {
+  const [isExpandedByDefault, setIsExpandedByDefault] = useState(isInitiallyExpanded);
+  const [overrides, setOverrides] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (!selectedPath) return;
+    const ancestors = ancestorPaths(selectedPath);
+    if (ancestors.length === 0) return;
+    setOverrides((prev) => {
+      if (ancestors.every((path) => prev[path])) return prev;
+      const next = { ...prev };
+      for (const path of ancestors) next[path] = true;
+      return next;
+    });
+  }, [selectedPath]);
+
+  const isDirOpen = useCallback(
+    (path: string) => overrides[path] ?? isExpandedByDefault,
+    [overrides, isExpandedByDefault],
+  );
+  const toggleDir = useCallback(
+    (path: string) =>
+      setOverrides((prev) => ({ ...prev, [path]: !(prev[path] ?? isExpandedByDefault) })),
+    [isExpandedByDefault],
+  );
+  const collapseAll = useCallback(() => {
+    setIsExpandedByDefault(false);
+    setOverrides({});
+  }, []);
+  const expandAll = useCallback(() => {
+    setIsExpandedByDefault(true);
+    setOverrides({});
+  }, []);
+
+  return { isDirOpen, toggleDir, isExpandedByDefault, collapseAll, expandAll };
+}
+
 interface FileTreeProps<T extends FileTreeEntry> {
   files: T[];
+  folding: TreeFolding;
   selectedPath: string | null;
   /** 省略時は既読表示なし (ファイル閲覧モード) */
   viewedPaths?: Set<string>;
@@ -90,6 +151,7 @@ interface FileTreeProps<T extends FileTreeEntry> {
 
 export function FileTree<T extends FileTreeEntry>({
   files,
+  folding,
   selectedPath,
   viewedPaths,
   commentCounts,
@@ -98,17 +160,18 @@ export function FileTree<T extends FileTreeEntry>({
 }: FileTreeProps<T>) {
   const tree = useMemo(() => buildTree(files), [files]);
   return (
-    <div className="overflow-y-auto py-1 text-[13px] leading-6">
+    <div className="py-1 text-[13px] leading-6">
       <TreeLevel
         nodes={tree}
         depth={0}
-        ctx={{ selectedPath, viewedPaths, commentCounts, onSelect, onToggleViewed }}
+        ctx={{ folding, selectedPath, viewedPaths, commentCounts, onSelect, onToggleViewed }}
       />
     </div>
   );
 }
 
 interface TreeContext<T> {
+  folding: TreeFolding;
   selectedPath: string | null;
   viewedPaths?: Set<string>;
   commentCounts?: Map<string, number>;
@@ -177,14 +240,14 @@ function DirRow<T extends FileTreeEntry>({
   depth: number;
   ctx: TreeContext<T>;
 }) {
-  const [isOpen, setIsOpen] = useState(true);
+  const isOpen = ctx.folding.isDirOpen(node.path);
   return (
     <div>
       <button
         type="button"
         className="flex w-full items-center gap-1 px-2 text-left text-neutral-500 hover:bg-neutral-200/60 dark:text-neutral-400 dark:hover:bg-neutral-800"
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => ctx.folding.toggleDir(node.path)}
       >
         <ChevronIcon isOpen={isOpen} />
         <Icon icon={isOpen ? FOLDER_OPENED_ICON : FOLDER_ICON} className="size-4 shrink-0" aria-hidden />
