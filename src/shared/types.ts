@@ -1,18 +1,26 @@
-/** commit-ish、または特殊キーワード working / staged */
+/** commit-ish、または特殊キーワード working / staged / browse */
 export type RefSpec = string;
 
-export const SPECIAL_TARGETS = ['working', 'staged', '.'] as const;
+export const SPECIAL_TARGETS = ['working', 'staged', '.', 'browse'] as const;
 
 /**
  * 比較範囲。target が特殊キーワードの場合の意味:
  * - 'working': unstaged changes (index vs working tree)。base は無視される
  * - 'staged':  staged changes (base vs index)
  * - '.':       全 uncommitted changes (base vs working tree)
+ * - 'browse':  比較なし。working tree のファイルをそのまま閲覧する (非 git ディレクトリの既定)
  */
 export interface RangeSpec {
   target: RefSpec;
   base: RefSpec;
   baseMode?: 'direct' | 'merge-base';
+}
+
+/** 比較なしでファイルを閲覧するだけの擬似 range */
+export const BROWSE_RANGE: RangeSpec = { target: 'browse', base: 'browse' };
+
+export function isBrowseRange(range: RangeSpec | null): boolean {
+  return range?.target === 'browse';
 }
 
 export type FileStatus = 'added' | 'deleted' | 'modified' | 'renamed';
@@ -49,10 +57,19 @@ export interface FileContentResponse {
 }
 
 export interface MetaResponse {
-  repoRoot: string;
+  /** 表示対象のルートディレクトリ (git リポジトリならその toplevel) */
+  rootDir: string;
+  /** ルートが git 管理下か。false なら比較機能は無効 */
+  isGitRepo: boolean;
   repoId: string;
   initialRange: RangeSpec;
   version: string;
+}
+
+export interface FilesResponse {
+  paths: string[];
+  /** 件数上限で打ち切られた場合 true */
+  isTruncated: boolean;
 }
 
 export interface RangesResponse {
@@ -151,6 +168,7 @@ export function rangeKey(range: RangeSpec): string {
 }
 
 export function describeRange(range: RangeSpec): string {
+  if (range.target === 'browse') return 'files';
   if (range.target === 'working') return 'unstaged changes';
   if (range.target === 'staged') return `${range.base}..staged`;
   if (range.target === '.') return `${range.base}..working tree`;

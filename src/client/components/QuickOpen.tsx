@@ -1,8 +1,7 @@
 import { Icon } from '@iconify/react';
-import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { api } from '../services/api';
+import { useAllFiles } from '../hooks/queries';
 import { getFileTypeIconName } from '../utils/fileTypeIcons';
 
 const MAX_RESULTS = 50;
@@ -44,12 +43,7 @@ export function QuickOpen({ isOpen, onClose, onSelect }: QuickOpenProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const repoFiles = useQuery({
-    queryKey: ['repo-files'],
-    queryFn: api.getRepoFiles,
-    enabled: isOpen,
-    staleTime: 30_000,
-  });
+  const repoFiles = useAllFiles(isOpen);
 
   useEffect(() => {
     if (isOpen) {

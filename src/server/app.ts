@@ -3,8 +3,15 @@ import { streamSSE } from 'hono/streaming';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 
-import { rangeKey, type MetaResponse, type RangeSpec } from '../shared/types.js';
+import {
+  rangeKey,
+  type DiffResponse,
+  type MetaResponse,
+  type RangesResponse,
+  type RangeSpec,
+} from '../shared/types.js';
 import type { AppContext } from './context.js';
+import { applyExcludes, listDirectoryFiles } from './files/tree.js';
 
 const VERSION = '0.1.0';
 
@@ -28,7 +35,8 @@ export function createApp(ctx: AppContext): Hono {
 
   app.get('/api/meta', (c) => {
     const meta: MetaResponse = {
-      repoRoot: ctx.repoRoot,
+      rootDir: ctx.rootDir,
+      isGitRepo: ctx.isGitRepo,
       repoId: ctx.repoId,
       initialRange: ctx.initialRange,
       version: VERSION,
@@ -37,15 +45,33 @@ export function createApp(ctx: AppContext): Hono {
   });
 
   app.get('/api/ranges', async (c) => {
+    if (!ctx.gitRefs) {
+      const empty: RangesResponse = { branches: [], recentCommits: [], defaultBranch: null };
+      return c.json(empty);
+    }
     return c.json(await ctx.gitRefs.getRanges());
   });
 
+  // ルート配下の全ファイル (Files タブ / Quick Open)。
+  // git 管理下なら ls-files (gitignore 済み)、それ以外はディレクトリ走査。
   app.get('/api/files', async (c) => {
-    return c.json({ paths: await ctx.gitDiff.listRepoFiles() });
+    if (ctx.gitDiff) {
+      return c.json(applyExcludes(await ctx.gitDiff.listRepoFiles(), ctx.config));
+    }
+    return c.json(await listDirectoryFiles(ctx.rootDir, ctx.config));
   });
 
   app.get('/api/diff', zValidator('query', rangeSchema), async (c) => {
     const range = toRange(c.req.valid('query'));
+    if (!ctx.gitDiff || range.target === 'browse') {
+      const empty: DiffResponse = {
+        files: [],
+        label: 'Files',
+        resolvedBase: 'browse',
+        resolvedTarget: 'working',
+      };
+      return c.json(empty);
+    }
     const diff = await ctx.gitDiff.getDiff(range);
     ctx.tsService.warmup(diff.files.map((f) => f.path));
     return c.json(diff);
@@ -105,7 +131,7 @@ export function createApp(ctx: AppContext): Hono {
     async (c) => {
       const { paths } = c.req.valid('json');
       const { runEslintForFiles } = await import('./eslint.js');
-      return c.json(await runEslintForFiles(ctx.repoRoot, paths));
+      return c.json(await runEslintForFiles(ctx.rootDir, paths));
     },
   );
 
@@ -136,8 +162,9 @@ export function createApp(ctx: AppContext): Hono {
     async (c) => {
       const q = c.req.valid('query');
       const range = toRange(q);
-      const resolvedBase = await ctx.gitDiff.resolveBase(range);
-      const contents = await ctx.gitContent.getFileContents({
+      const resolvedBase =
+        ctx.gitDiff && range.target !== 'browse' ? await ctx.gitDiff.resolveBase(range) : range.base;
+      const contents = await ctx.fileContent.getFileContents({
         range,
         resolvedBase,
         path: q.path,
@@ -153,7 +180,7 @@ export function createApp(ctx: AppContext): Hono {
     zValidator('json', z.object({ path: z.string().min(1), content: z.string() })),
     async (c) => {
       const { path, content } = c.req.valid('json');
-      await ctx.gitContent.writeWorkingFile(path, content);
+      await ctx.fileContent.writeWorkingFile(path, content);
       return c.json({ ok: true });
     },
   );

@@ -1,23 +1,32 @@
 import { Icon } from '@iconify/react';
 import { useMemo, useState } from 'react';
 
-import type { DiffFileMeta, FileStatus } from '../../shared/types';
+import type { FileStatus } from '../../shared/types';
 import { FOLDER_ICON, FOLDER_OPENED_ICON, getFileTypeIconName } from '../utils/fileTypeIcons';
 
-interface TreeDir {
+/**
+ * ツリーに並べられる最小の情報。
+ * diff 由来のエントリは status を持ち、単なるファイル一覧では持たない。
+ */
+export interface FileTreeEntry {
+  path: string;
+  status?: FileStatus;
+}
+
+interface TreeDir<T> {
   kind: 'dir';
   name: string;
   path: string;
-  children: TreeNode[];
+  children: TreeNode<T>[];
 }
 
-interface TreeFile {
+interface TreeFile<T> {
   kind: 'file';
   name: string;
-  file: DiffFileMeta;
+  file: T;
 }
 
-type TreeNode = TreeDir | TreeFile;
+type TreeNode<T> = TreeDir<T> | TreeFile<T>;
 
 const STATUS_STYLE: Record<FileStatus, { letter: string; className: string }> = {
   added: { letter: 'A', className: 'text-green-600 dark:text-green-500' },
@@ -26,8 +35,8 @@ const STATUS_STYLE: Record<FileStatus, { letter: string; className: string }> = 
   renamed: { letter: 'R', className: 'text-blue-500 dark:text-blue-400' },
 };
 
-function buildTree(files: DiffFileMeta[]): TreeNode[] {
-  const root: TreeDir = { kind: 'dir', name: '', path: '', children: [] };
+function buildTree<T extends FileTreeEntry>(files: T[]): TreeNode<T>[] {
+  const root: TreeDir<T> = { kind: 'dir', name: '', path: '', children: [] };
   for (const file of files) {
     const segments = file.path.split('/');
     let dir = root;
@@ -35,7 +44,7 @@ function buildTree(files: DiffFileMeta[]): TreeNode[] {
       const name = segments[i]!;
       const path = segments.slice(0, i + 1).join('/');
       let next = dir.children.find(
-        (n): n is TreeDir => n.kind === 'dir' && n.name === name,
+        (n): n is TreeDir<T> => n.kind === 'dir' && n.name === name,
       );
       if (!next) {
         next = { kind: 'dir', name, path, children: [] };
@@ -46,19 +55,19 @@ function buildTree(files: DiffFileMeta[]): TreeNode[] {
     dir.children.push({ kind: 'file', name: segments[segments.length - 1]!, file });
   }
   // 単一子ディレクトリを畳む (a/b/c → a/b/c 表記)
-  const compact = (node: TreeDir): TreeDir => {
+  const compact = (node: TreeDir<T>): TreeDir<T> => {
     let current = node;
     while (
       current.children.length === 1 &&
       current.children[0]!.kind === 'dir' &&
       current.name !== ''
     ) {
-      const only = current.children[0] as TreeDir;
+      const only = current.children[0] as TreeDir<T>;
       current = { ...only, name: `${current.name}/${only.name}` };
     }
     return { ...current, children: current.children.map((c) => (c.kind === 'dir' ? compact(c) : c)) };
   };
-  const sortNodes = (nodes: TreeNode[]): TreeNode[] =>
+  const sortNodes = (nodes: TreeNode<T>[]): TreeNode<T>[] =>
     [...nodes]
       .sort((a, b) => {
         if (a.kind !== b.kind) return a.kind === 'dir' ? -1 : 1;
@@ -68,34 +77,54 @@ function buildTree(files: DiffFileMeta[]): TreeNode[] {
   return sortNodes(compact(root).children);
 }
 
-interface FileTreeProps {
-  files: DiffFileMeta[];
+interface FileTreeProps<T extends FileTreeEntry> {
+  files: T[];
   selectedPath: string | null;
-  viewedPaths: Set<string>;
+  /** 省略時は既読表示なし (ファイル閲覧モード) */
+  viewedPaths?: Set<string>;
   /** path → その範囲でのコメント数 */
   commentCounts?: Map<string, number>;
   onSelect: (path: string) => void;
-  onToggleViewed?: (file: DiffFileMeta, isViewed: boolean) => void;
+  onToggleViewed?: (file: T, isViewed: boolean) => void;
 }
 
-export function FileTree({ files, selectedPath, viewedPaths, commentCounts, onSelect, onToggleViewed }: FileTreeProps) {
+export function FileTree<T extends FileTreeEntry>({
+  files,
+  selectedPath,
+  viewedPaths,
+  commentCounts,
+  onSelect,
+  onToggleViewed,
+}: FileTreeProps<T>) {
   const tree = useMemo(() => buildTree(files), [files]);
   return (
     <div className="overflow-y-auto py-1 text-[13px] leading-6">
-      <TreeLevel nodes={tree} depth={0} ctx={{ selectedPath, viewedPaths, commentCounts, onSelect, onToggleViewed }} />
+      <TreeLevel
+        nodes={tree}
+        depth={0}
+        ctx={{ selectedPath, viewedPaths, commentCounts, onSelect, onToggleViewed }}
+      />
     </div>
   );
 }
 
-interface TreeContext {
+interface TreeContext<T> {
   selectedPath: string | null;
-  viewedPaths: Set<string>;
+  viewedPaths?: Set<string>;
   commentCounts?: Map<string, number>;
   onSelect: (path: string) => void;
-  onToggleViewed?: (file: DiffFileMeta, isViewed: boolean) => void;
+  onToggleViewed?: (file: T, isViewed: boolean) => void;
 }
 
-function TreeLevel({ nodes, depth, ctx }: { nodes: TreeNode[]; depth: number; ctx: TreeContext }) {
+function TreeLevel<T extends FileTreeEntry>({
+  nodes,
+  depth,
+  ctx,
+}: {
+  nodes: TreeNode<T>[];
+  depth: number;
+  ctx: TreeContext<T>;
+}) {
   return (
     <>
       {nodes.map((node) =>
@@ -139,7 +168,15 @@ function ChevronIcon({ isOpen }: { isOpen: boolean }) {
   );
 }
 
-function DirRow({ node, depth, ctx }: { node: TreeDir; depth: number; ctx: TreeContext }) {
+function DirRow<T extends FileTreeEntry>({
+  node,
+  depth,
+  ctx,
+}: {
+  node: TreeDir<T>;
+  depth: number;
+  ctx: TreeContext<T>;
+}) {
   const [isOpen, setIsOpen] = useState(true);
   return (
     <div>
@@ -158,12 +195,20 @@ function DirRow({ node, depth, ctx }: { node: TreeDir; depth: number; ctx: TreeC
   );
 }
 
-function FileRow({ node, depth, ctx }: { node: TreeFile; depth: number; ctx: TreeContext }) {
+function FileRow<T extends FileTreeEntry>({
+  node,
+  depth,
+  ctx,
+}: {
+  node: TreeFile<T>;
+  depth: number;
+  ctx: TreeContext<T>;
+}) {
   const { selectedPath, viewedPaths, commentCounts, onSelect, onToggleViewed } = ctx;
   const { file } = node;
-  const status = STATUS_STYLE[file.status];
+  const status = file.status ? STATUS_STYLE[file.status] : null;
   const isSelected = selectedPath === file.path;
-  const isViewed = viewedPaths.has(file.path);
+  const isViewed = viewedPaths?.has(file.path) ?? false;
   return (
     <div
       className={`group flex w-full cursor-pointer items-center gap-1.5 px-2 ${
@@ -189,7 +234,11 @@ function FileRow({ node, depth, ctx }: { node: TreeFile; depth: number; ctx: Tre
         {node.name}
       </span>
       <CommentCountBadge count={commentCounts?.get(file.path) ?? 0} />
-      <span className={`w-3 shrink-0 text-center font-bold ${status.className}`}>{status.letter}</span>
+      {status && (
+        <span className={`w-3 shrink-0 text-center font-bold ${status.className}`}>
+          {status.letter}
+        </span>
+      )}
     </div>
   );
 }

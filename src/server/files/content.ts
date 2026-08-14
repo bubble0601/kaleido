@@ -12,17 +12,29 @@ const MAX_BUFFER = 10 * 1024 * 1024;
 const MAX_CONTENT_BYTES = 2 * 1024 * 1024;
 const MAX_CONTENT_LINES = 20_000;
 
-export class GitContent {
-  constructor(private repoRoot: string) {}
+/**
+ * ファイル本文の取得。working tree はファイルシステムから直接読むため git を必要としない。
+ * git ref (commit / staged) の読み出しは isGitRepo のときだけ有効。
+ */
+export class FileContent {
+  constructor(
+    private rootDir: string,
+    private isGitRepo: boolean,
+  ) {}
 
   /**
    * RangeSpec から original/modified 両側の参照 ref を決める。
+   * - browse:  比較なし (modified 側のみ)
    * - working: index vs working tree
    * - staged:  base vs index
    * - '.':     base vs working tree
    * - commit:  base vs target
    */
-  resolveSideRefs(range: RangeSpec, resolvedBase: string): { originalRef: string; modifiedRef: string } {
+  resolveSideRefs(
+    range: RangeSpec,
+    resolvedBase: string,
+  ): { originalRef: string | null; modifiedRef: string } {
+    if (range.target === 'browse') return { originalRef: null, modifiedRef: 'working' };
     if (range.target === 'working') return { originalRef: 'staged', modifiedRef: 'working' };
     if (range.target === 'staged') return { originalRef: resolvedBase, modifiedRef: 'staged' };
     if (range.target === '.') return { originalRef: resolvedBase, modifiedRef: 'working' };
@@ -40,7 +52,9 @@ export class GitContent {
     const refs = this.resolveSideRefs(range, resolvedBase);
 
     const [original, modified] = await Promise.all([
-      status === 'added' ? null : this.readSide(refs.originalRef, oldPath ?? path),
+      refs.originalRef === null || status === 'added'
+        ? null
+        : this.readSide(refs.originalRef, oldPath ?? path),
       status === 'deleted' ? null : this.readSide(refs.modifiedRef, path),
     ]);
 
@@ -67,29 +81,21 @@ export class GitContent {
 
   /** working tree の既存ファイルを上書き保存する (編集機能用) */
   async writeWorkingFile(filepath: string, content: string): Promise<void> {
-    const repoRoot = realpathSync(resolve(this.repoRoot));
-    // 既存ファイルのみ対象 (realpathSync は存在しないパスで throw する)
-    const abs = realpathSync(resolve(repoRoot, normalizeRelPath(filepath)));
-    if (abs !== repoRoot && !abs.startsWith(`${repoRoot}${sep}`)) {
-      throw new Error('File path outside repository');
-    }
-    await writeFile(abs, content, 'utf8');
+    await writeFile(this.resolveInsideRoot(filepath), content, 'utf8');
   }
 
   async readBlob(ref: string, filepath: string): Promise<Buffer> {
     if (ref === 'working') {
-      const repoRoot = realpathSync(resolve(this.repoRoot));
-      const abs = realpathSync(resolve(repoRoot, normalizeRelPath(filepath)));
-      if (abs !== repoRoot && !abs.startsWith(`${repoRoot}${sep}`)) {
-        throw new Error('File path outside repository');
-      }
-      return readFile(abs);
+      return readFile(this.resolveInsideRoot(filepath));
+    }
+    if (!this.isGitRepo) {
+      throw new Error('Not a git repository');
     }
 
     const rel = normalizeRelPath(filepath);
     if (ref === 'staged') {
       const { stdout } = await execFileAsync('git', ['show', `:${rel}`], {
-        cwd: this.repoRoot,
+        cwd: this.rootDir,
         maxBuffer: MAX_BUFFER,
         encoding: 'buffer',
       });
@@ -97,15 +103,25 @@ export class GitContent {
     }
 
     const { stdout: hashOut } = await execFileAsync('git', ['rev-parse', `${ref}:${rel}`], {
-      cwd: this.repoRoot,
+      cwd: this.rootDir,
       maxBuffer: MAX_BUFFER,
     });
     const { stdout } = await execFileAsync('git', ['cat-file', 'blob', hashOut.trim()], {
-      cwd: this.repoRoot,
+      cwd: this.rootDir,
       maxBuffer: MAX_BUFFER,
       encoding: 'buffer',
     });
     return stdout;
+  }
+
+  /** ルート配下の既存ファイルの絶対パスを返す (realpathSync は存在しないパスで throw する) */
+  private resolveInsideRoot(filepath: string): string {
+    const rootDir = realpathSync(resolve(this.rootDir));
+    const abs = realpathSync(resolve(rootDir, normalizeRelPath(filepath)));
+    if (abs !== rootDir && !abs.startsWith(`${rootDir}${sep}`)) {
+      throw new Error('File path outside the viewer root');
+    }
+    return abs;
   }
 }
 
@@ -113,7 +129,7 @@ function normalizeRelPath(filepath: string): string {
   if (filepath.length === 0) throw new Error('Invalid file path');
   const normalized = filepath.replace(/\\/g, '/');
   if (normalized.startsWith('/') || normalized.split('/').includes('..')) {
-    throw new Error('File path outside repository');
+    throw new Error('File path outside the viewer root');
   }
   return normalized;
 }

@@ -11,8 +11,12 @@ import { createAppContext } from './context.js';
 import { startWatcher } from './watcher.js';
 
 export interface StartServerOptions {
-  repoRoot: string;
+  /** 表示対象のルートディレクトリ (git リポジトリならその toplevel) */
+  rootDir: string;
+  isGitRepo: boolean;
   initialRange: RangeSpec;
+  /** CLI から追加する除外パターン */
+  excludes?: string[];
   port: number;
   host: string;
   /** false の場合、全クライアント切断から5秒後にプロセスを終了する */
@@ -28,13 +32,15 @@ export interface StartedServer {
 }
 
 export async function startServer(options: StartServerOptions): Promise<StartedServer> {
-  const ctx = createAppContext(options.repoRoot, options.initialRange, {
+  const ctx = createAppContext(options.rootDir, options.initialRange, {
+    isGitRepo: options.isGitRepo,
     isKeepAlive: options.isKeepAlive,
+    excludes: options.excludes,
     onShutdown: options.onShutdown,
   });
   const app = createApp(ctx);
 
-  void startWatcher(ctx.repoRoot, (paths) => {
+  void startWatcher(ctx.rootDir, (paths) => {
     for (const path of paths) {
       ctx.tsService.invalidateFile(path);
     }

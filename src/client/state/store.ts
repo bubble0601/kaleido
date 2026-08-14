@@ -10,6 +10,8 @@ export interface RevealTarget {
 
 export type ViewMode = 'split' | 'inline' | 'file';
 export type Theme = 'light' | 'dark';
+/** サイドバーの表示内容: 比較対象のファイル一覧 / ルート配下の全ファイル */
+export type SidebarTab = 'changes' | 'files';
 
 const THEME_STORAGE_KEY = 'kaleido-theme';
 
@@ -27,8 +29,10 @@ interface UiState {
   /** ファイルを開いた後にスクロールする位置 (Go to Definition から) */
   pendingReveal: RevealTarget | null;
   viewMode: ViewMode;
+  sidebarTab: SidebarTab;
   theme: Theme;
   setRange: (range: RangeSpec) => void;
+  setSidebarTab: (tab: SidebarTab) => void;
   setSelectedPath: (path: string | null) => void;
   setBrowsePath: (path: string | null) => void;
   setPendingReveal: (target: RevealTarget | null) => void;
@@ -42,8 +46,10 @@ export const useUiStore = create<UiState>((set) => ({
   browsePath: null,
   pendingReveal: null,
   viewMode: 'split',
+  sidebarTab: 'changes',
   theme: getInitialTheme(),
   setRange: (range) => set({ range, selectedPath: null, browsePath: null }),
+  setSidebarTab: (sidebarTab) => set({ sidebarTab }),
   setSelectedPath: (selectedPath) => set({ selectedPath, browsePath: null }),
   setBrowsePath: (browsePath) => set({ browsePath }),
   setPendingReveal: (pendingReveal) => set({ pendingReveal }),

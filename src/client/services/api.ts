@@ -4,6 +4,7 @@ import type {
   DiffFileMeta,
   DiffResponse,
   FileContentResponse,
+  FilesResponse,
   HoverRequest,
   HoverResponse,
   MetaResponse,
@@ -41,7 +42,7 @@ export const api = {
 
   getRanges: () => request<RangesResponse>('/api/ranges'),
 
-  getRepoFiles: () => request<{ paths: string[] }>('/api/files'),
+  getFiles: () => request<FilesResponse>('/api/files'),
 
   saveFile: (path: string, content: string) =>
     request<{ ok: boolean }>('/api/file/save', {

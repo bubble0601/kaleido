@@ -9,8 +9,23 @@ export function useMeta() {
   return useQuery({ queryKey: ['meta'], queryFn: api.getMeta, staleTime: Infinity });
 }
 
-export function useRanges() {
-  return useQuery({ queryKey: ['ranges'], queryFn: api.getRanges, staleTime: 30_000 });
+export function useRanges(isEnabled = true) {
+  return useQuery({
+    queryKey: ['ranges'],
+    queryFn: api.getRanges,
+    enabled: isEnabled,
+    staleTime: 30_000,
+  });
+}
+
+/** ルート配下の全ファイル (Files タブ / Quick Open で共有) */
+export function useAllFiles(isEnabled = true) {
+  return useQuery({
+    queryKey: ['files'],
+    queryFn: api.getFiles,
+    enabled: isEnabled,
+    staleTime: 30_000,
+  });
 }
 
 export function useDiff(range: RangeSpec | null) {
@@ -32,11 +47,15 @@ export function useFileContent(range: RangeSpec | null, file: DiffFileMeta | nul
 
 /**
  * ESLint はディスク上のファイルに対して実行されるため、
- * working tree 系の比較 (working / staged / '.') のときのみ有効。
+ * working tree を見ている範囲 (working / staged / '.' / browse) のときのみ有効。
  */
 export function useLint(range: RangeSpec | null, files: DiffFileMeta[]) {
   const isWorkingTreeRange =
-    range !== null && (range.target === 'working' || range.target === 'staged' || range.target === '.');
+    range !== null &&
+    (range.target === 'working' ||
+      range.target === 'staged' ||
+      range.target === '.' ||
+      range.target === 'browse');
   const paths = files.filter((f) => TS_FILE_PATTERN.test(f.path) && f.status !== 'deleted').map((f) => f.path);
   return useQuery({
     queryKey: ['lint', paths, files.map((f) => f.contentHash).join(',')],

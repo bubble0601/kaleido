@@ -44,6 +44,8 @@ interface ToolbarProps {
   onOpenQuickOpen?: () => void;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
+  /** false のとき表示モード切替を隠す (比較のないファイル閲覧) */
+  isDiffAvailable?: boolean;
   viewedCount?: number;
   totalCount?: number;
   children?: React.ReactNode;
@@ -74,6 +76,7 @@ export function Toolbar({
   onOpenQuickOpen,
   viewMode,
   onViewModeChange,
+  isDiffAvailable = true,
   viewedCount,
   totalCount,
   children,
@@ -112,6 +115,7 @@ export function Toolbar({
         </span>
       )}
       {children}
+      {isDiffAvailable && (
       <div className="flex overflow-hidden rounded border border-neutral-300 dark:border-neutral-700">
         {MODES.map(({ mode, label, icon }) => (
           <button
@@ -129,6 +133,7 @@ export function Toolbar({
           </button>
         ))}
       </div>
+      )}
       <button
         type="button"
         className={BUTTON_CLASS}

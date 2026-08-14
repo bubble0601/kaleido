@@ -5,11 +5,11 @@ import watcher from '@parcel/watcher';
 const DEBOUNCE_MS = 300;
 
 /**
- * リポジトリのファイル変更を監視する。
+ * ルートディレクトリのファイル変更を監視する。
  * .git 配下は HEAD / index のみ通知対象 (commit / stage 操作の検知用)。
  */
 export async function startWatcher(
-  repoRoot: string,
+  rootDir: string,
   onChange: (paths: string[]) => void,
 ): Promise<() => Promise<void>> {
   let pending = new Set<string>();
@@ -23,11 +23,11 @@ export async function startWatcher(
   };
 
   const subscription = await watcher.subscribe(
-    repoRoot,
+    rootDir,
     (err, events) => {
       if (err) return;
       for (const event of events) {
-        const rel = relative(repoRoot, event.path).split(sep).join('/');
+        const rel = relative(rootDir, event.path).split(sep).join('/');
         if (rel.startsWith('.git/')) {
           if (rel !== '.git/HEAD' && rel !== '.git/index') continue;
         }

@@ -3,12 +3,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { CommentCard, CommentForm } from './components/comments/CommentWidgets';
 import { DiffView } from './components/DiffView';
-import { FileTree } from './components/FileTree';
+import { Sidebar } from './components/Sidebar';
 import { CommentsPanel } from './components/CommentsPanel';
 import { QuickOpen } from './components/QuickOpen';
 import { Toolbar } from './components/Toolbar';
 import { useDiff, useFileContent, useLint, useMeta, useTsDiagnostics } from './hooks/queries';
-import { isFileLevelComment, type Comment, type RangeSpec } from '../shared/types';
+import {
+  BROWSE_RANGE,
+  isBrowseRange,
+  isFileLevelComment,
+  type Comment,
+  type RangeSpec,
+} from '../shared/types';
 import { api } from './services/api';
 import { computeViewedPaths, useComments, useViewed } from './hooks/review';
 import { useSidebarResize } from './hooks/useSidebarResize';
@@ -52,8 +58,21 @@ export function App() {
     }
   }, [meta.data, range, setRange]);
 
+  const isGitRepo = meta.data?.isGitRepo ?? false;
   const diff = useDiff(range);
   const files = useMemo(() => diff.data?.files ?? [], [diff.data]);
+
+  /** 比較対象にあれば diff として、なければ単体ファイルとして開く */
+  const openFile = useCallback(
+    (path: string) => {
+      if (files.some((f) => f.path === path)) {
+        setSelectedPath(path);
+      } else {
+        setBrowsePath(path);
+      }
+    },
+    [files, setSelectedPath, setBrowsePath],
+  );
 
   const selectedFile = useMemo(() => {
     if (browsePath) {
@@ -74,36 +93,33 @@ export function App() {
   // 初期選択 (初回は URL の path を優先) とファイル消滅時のフォールバック
   const hasRestoredUrlPathRef = useRef(false);
   useEffect(() => {
-    if (browsePath) return;
-    if (files.length === 0 || selectedFile) return;
+    // diff の取得を待たないと、比較対象内のファイルまで browse 扱いになる
+    if (!diff.isSuccess) return;
+    if (browsePath || selectedFile) return;
     if (!hasRestoredUrlPathRef.current) {
       hasRestoredUrlPathRef.current = true;
       const urlPath = getInitialUrlPath();
-      if (urlPath && files.some((f) => f.path === urlPath)) {
-        setSelectedPath(urlPath);
+      if (urlPath) {
+        openFile(urlPath);
         return;
       }
     }
-    setSelectedPath(files[0]!.path);
-  }, [files, selectedFile, browsePath, setSelectedPath]);
+    if (files.length > 0) setSelectedPath(files[0]!.path);
+  }, [diff.isSuccess, files, selectedFile, browsePath, openFile, setSelectedPath]);
 
   // Go to Definition などからのファイルオープン要求
   useEffect(() => {
     setFileOpenHandler((target) => {
       setPendingReveal(target);
-      if (files.some((f) => f.path === target.path)) {
-        setSelectedPath(target.path);
-      } else {
-        setBrowsePath(target.path);
-      }
+      openFile(target.path);
     });
     return () => setFileOpenHandler(null);
-  }, [files, setSelectedPath, setBrowsePath, setPendingReveal]);
+  }, [openFile, setPendingReveal]);
 
-  // 範囲・選択ファイルを URL に反映 (リロード・共有用)
+  // 範囲・表示中ファイルを URL に反映 (リロード・共有用)
   useEffect(() => {
-    syncUrl(range, selectedPath);
-  }, [range, selectedPath]);
+    syncUrl(range, browsePath ?? selectedPath);
+  }, [range, selectedPath, browsePath]);
 
   const [isFileCommentOpen, setIsFileCommentOpen] = useState(false);
   useEffect(() => setIsFileCommentOpen(false), [selectedPath, range]);
@@ -142,7 +158,9 @@ export function App() {
 
   useEffect(() => setIsAllFolded(false), [selectedPath, browsePath, effectiveViewMode]);
 
-  const contents = useFileContent(range, selectedFile);
+  // 比較対象外のファイルは、比較範囲によらず working tree の内容をそのまま表示する
+  const contentRange = browsePath ? BROWSE_RANGE : range;
+  const contents = useFileContent(contentRange, selectedFile);
   const isEditable = contents.data?.modified?.ref === 'working' && !contents.data.isTooLarge;
   const saveFile = useCallback(async () => {
     const editor = editTargetRef.current;
@@ -157,7 +175,12 @@ export function App() {
   }, [selectedFile, queryClient]);
 
   const tsDiagnostics = useTsDiagnostics(selectedFile, contents.data);
-  const lint = useLint(range, files);
+  // 比較外のファイルを開いているときは、そのファイルだけを lint 対象にする
+  const lintTargets = useMemo(
+    () => (browsePath && selectedFile ? [selectedFile] : files),
+    [browsePath, selectedFile, files],
+  );
+  const lint = useLint(range, lintTargets);
   const diagnostics = useMemo(() => {
     const ts = tsDiagnostics.data ?? [];
     const eslint = selectedFile ? (lint.data?.results[selectedFile.path] ?? []) : [];
@@ -273,13 +296,9 @@ export function App() {
   const jumpToComment = useCallback(
     (comment: Comment) => {
       setPendingReveal({ path: comment.path, line: comment.startLine ?? 1, column: 1 });
-      if (files.some((f) => f.path === comment.path)) {
-        setSelectedPath(comment.path);
-      } else {
-        setBrowsePath(comment.path);
-      }
+      openFile(comment.path);
     },
-    [files, setPendingReveal, setSelectedPath, setBrowsePath],
+    [openFile, setPendingReveal],
   );
 
   const handleCreateComment = useCallback(
@@ -322,22 +341,17 @@ export function App() {
           setViewMode(mode);
           setModeOverridePath(selectedPath);
         }}
+        isDiffAvailable={!isBrowseRange(range)}
         viewedCount={viewedPaths.size}
         totalCount={files.length}
       >
         <CommentsPanel comments={comments} onJump={jumpToComment} onClearAll={() => void clearAllComments()} />
-        <RangeSelector current={range} onChange={setRange} />
+        {isGitRepo && <RangeSelector current={range} onChange={setRange} />}
       </Toolbar>
       <QuickOpen
         isOpen={isQuickOpenVisible}
         onClose={() => setIsQuickOpenVisible(false)}
-        onSelect={(path) => {
-          if (files.some((f) => f.path === path)) {
-            setSelectedPath(path);
-          } else {
-            setBrowsePath(path);
-          }
-        }}
+        onSelect={openFile}
       />
       {clearSnackbar && (
         <div className="fixed bottom-5 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-lg bg-neutral-800 px-4 py-2.5 text-sm text-neutral-100 shadow-2xl dark:bg-neutral-700">
@@ -366,20 +380,19 @@ export function App() {
         {!sidebar.isCollapsed && (
           <aside
             style={{ width: sidebar.width }}
-            className="shrink-0 overflow-y-auto bg-neutral-50 dark:bg-neutral-900"
+            className="shrink-0 bg-neutral-50 dark:bg-neutral-900"
           >
-            {files.length === 0 ? (
-              <div className="p-4 text-sm text-neutral-400 dark:text-neutral-500">No changes</div>
-            ) : (
-              <FileTree
-                files={files}
-                selectedPath={selectedPath}
-                viewedPaths={viewedPaths}
-                commentCounts={commentCounts}
-                onSelect={setSelectedPath}
-                onToggleViewed={(file, isViewed) => toggleViewed.mutate({ file, isViewed })}
-              />
-            )}
+            <Sidebar
+              diffFiles={files}
+              isGitRepo={isGitRepo}
+              selectedPath={selectedPath}
+              browsePath={browsePath}
+              viewedPaths={viewedPaths}
+              commentCounts={commentCounts}
+              onSelectDiffFile={setSelectedPath}
+              onOpenFile={openFile}
+              onToggleViewed={(file, isViewed) => toggleViewed.mutate({ file, isViewed })}
+            />
           </aside>
         )}
         {/* リサイザ: ドラッグで幅調整、閾値以下で折り畳み、ダブルクリックでトグル (⌘B でも) */}
@@ -472,9 +485,9 @@ export function App() {
             </div>
           )}
           <div className="min-h-0 flex-1">
-          {selectedFile && range && (selectedFile.isBinary || contents.data) ? (
+          {selectedFile && contentRange && (selectedFile.isBinary || contents.data) ? (
             <DiffView
-              range={range}
+              range={contentRange}
               file={selectedFile}
               contents={
                 contents.data ?? { original: null, modified: null, isTooLarge: false }
@@ -492,7 +505,13 @@ export function App() {
               onDeleteComment={handleDeleteComment}
             />
           ) : (
-            <Centered>{files.length === 0 ? 'No changes to show' : 'Loading file…'}</Centered>
+            <Centered>
+              {selectedFile
+                ? 'Loading file…'
+                : isBrowseRange(range)
+                  ? 'Select a file from the tree'
+                  : 'No changes to show'}
+            </Centered>
           )}
           </div>
         </main>
