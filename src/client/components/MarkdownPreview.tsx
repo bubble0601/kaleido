@@ -247,7 +247,8 @@ function createMarked(basePath: string, toc: TocEntry[], diagrams: MermaidBlock[
   // ビューア自身を指す URL は絶対 URL で書き出す
   const origin = location.origin;
   const usedIds = new Map<string, number>();
-  return new Marked({ gfm: true }).use({
+  // breaks: 段落内の改行をそのまま <br> にする (書いたとおりの改行位置で見せる)
+  return new Marked({ gfm: true, breaks: true }).use({
     renderer: {
       image({ href, title, text }) {
         const resolved = resolveRelativePath(basePath, href);
