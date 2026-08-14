@@ -1,3 +1,5 @@
+import githubDarkCss from 'github-markdown-css/github-markdown-dark.css?inline';
+import githubLightCss from 'github-markdown-css/github-markdown-light.css?inline';
 import { Marked } from 'marked';
 import { useMemo } from 'react';
 
@@ -34,9 +36,14 @@ export function MarkdownPreview({ content, path, theme }: MarkdownPreviewProps) 
 
 function renderDocument(content: string, path: string, theme: Theme): string {
   const body = createMarked(path).parse(content, { async: false });
+  const themeCss = theme === 'dark' ? githubDarkCss : githubLightCss;
   return `<!doctype html>
-<html data-theme="${theme}">
-<head><meta charset="utf-8"><style>${PREVIEW_CSS}</style></head>
+<html style="color-scheme: ${theme}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>${themeCss}${LAYOUT_CSS}</style>
+</head>
 <body><article class="markdown-body">${body}</article></body>
 </html>`;
 }
@@ -91,62 +98,40 @@ function slugify(text: string): string {
     .replace(/\s+/g, '-');
 }
 
-const PREVIEW_CSS = `
-:root {
-  --fg: #1f2328; --muted: #59636e; --bg: #ffffff;
-  --border: #d1d9e0; --code-bg: #f6f8fa; --link: #0969da; --quote: #59636e;
+/**
+ * github-markdown-css は .markdown-body の見た目のみを定義するため、
+ * 余白と背景の敷き方、および日本語の組版調整を足す。
+ *
+ * 組版まわりは https://zenn.dev/tyler0702/articles/d5df44210b4855 を参考にした:
+ * - text-spacing-trim: 約物 (括弧・句読点) の前後にフォント由来で残る空きを詰める
+ * - line-break: strict  小書き仮名・長音符が行頭に来る禁則を厳しくする
+ * - hanging-punctuation: 行末の句読点をぶら下げて右端を揃える
+ * - word-break / overflow-wrap: 長い URL や英単語のはみ出し対策
+ * いずれも対応していないブラウザでは無視されるだけで、崩れはしない。
+ */
+const LAYOUT_CSS = `
+html { height: 100%; }
+body { margin: 0; min-height: 100%; }
+.markdown-body {
+  box-sizing: border-box;
+  min-height: 100vh;
+  /* 背景はビューポート全体に敷き、本文だけ 980px 幅に収める */
+  padding: 32px max(24px, calc((100% - 980px) / 2)) 64px;
+
+  text-spacing-trim: trim-start;
+  line-break: strict;
+  word-break: normal;
+  overflow-wrap: anywhere;
+  hanging-punctuation: allow-end;
 }
-html[data-theme='dark'] {
-  --fg: #e6edf3; --muted: #9198a1; --bg: #0d1117;
-  --border: #3d444d; --code-bg: #151b23; --link: #4493f8; --quote: #9198a1;
+/* コードは1文字も詰めたり折ったりしてはいけないので組版調整から外す */
+.markdown-body pre,
+.markdown-body code,
+.markdown-body kbd,
+.markdown-body samp {
+  text-spacing-trim: normal;
+  line-break: auto;
+  hanging-punctuation: none;
+  overflow-wrap: normal;
 }
-* { box-sizing: border-box; }
-html, body { margin: 0; background: var(--bg); }
-body {
-  color: var(--fg);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', 'Hiragino Sans',
-    'Noto Sans JP', Meiryo, sans-serif;
-  font-size: 15px;
-  line-height: 1.7;
-}
-.markdown-body { max-width: 900px; margin: 0 auto; padding: 24px 32px 64px; }
-.markdown-body > *:first-child { margin-top: 0; }
-h1, h2, h3, h4, h5, h6 { margin: 1.6em 0 0.6em; line-height: 1.3; font-weight: 600; }
-h1 { font-size: 1.9em; padding-bottom: 0.3em; border-bottom: 1px solid var(--border); }
-h2 { font-size: 1.45em; padding-bottom: 0.3em; border-bottom: 1px solid var(--border); }
-h3 { font-size: 1.2em; }
-h4 { font-size: 1em; }
-h5, h6 { font-size: 0.9em; color: var(--muted); }
-p, ul, ol, blockquote, table, pre { margin: 0 0 1em; }
-a { color: var(--link); text-decoration: none; }
-a:hover { text-decoration: underline; }
-ul, ol { padding-left: 1.6em; }
-li + li { margin-top: 0.25em; }
-li > ul, li > ol { margin: 0.25em 0; }
-blockquote {
-  padding: 0 1em; color: var(--quote);
-  border-left: 0.25em solid var(--border);
-}
-code {
-  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
-  font-size: 0.87em;
-  background: var(--code-bg);
-  padding: 0.2em 0.4em;
-  border-radius: 6px;
-}
-pre {
-  background: var(--code-bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 12px 16px;
-  overflow-x: auto;
-}
-pre code { background: none; padding: 0; font-size: 0.85em; }
-table { border-collapse: collapse; display: block; overflow-x: auto; width: max-content; max-width: 100%; }
-th, td { border: 1px solid var(--border); padding: 6px 13px; }
-th { background: var(--code-bg); font-weight: 600; }
-img { max-width: 100%; }
-hr { height: 1px; margin: 1.8em 0; border: 0; background: var(--border); }
-input[type='checkbox'] { margin-right: 0.4em; }
-li:has(> input[type='checkbox']) { list-style: none; }
 `;
