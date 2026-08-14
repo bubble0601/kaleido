@@ -8,7 +8,7 @@ git リポジトリなら diff レビューができ、**git 管理外のディ�
 
 - **サイドバーの 3 タブ**: `Changes` (比較対象のファイル) / `Files` (ルート配下の全ファイル) / `Docs` (Markdown・HTML だけを絞り込んだ一覧)。git 管理外では `Changes` は出ない。`Files` だけ既定で畳んだ状態で、タブごとに全展開 / 全折りたたみを切り替えられる。開いているファイルの階層だけは自動で開く
 - **表示モード**: side-by-side diff / inline diff / ファイル単体表示を切替。比較対象外のファイルは常に working tree の内容を単体表示する
-- **Markdown プレビュー**: `.md` などはソース / ソース+プレビュー / プレビューを切替。見た目は `github-markdown-css` (light / dark をテーマに追従) + 日本語の組版調整 (約物の空き詰め・禁則強化・ぶら下げ)。既定は開いた経路で決まり、`Changes` からならソースとプレビューを並べ、`Files` / `Docs` からならプレビューのみ。編集中の内容はライブで反映される
+- **Markdown プレビュー**: `.md` などはソース / ソース+プレビュー / プレビューを切替。見た目は `github-markdown-css` (light / dark をテーマに追従) + 日本語の組版調整 (約物の空き詰め・禁則強化・ぶら下げ)。既定は開いた経路で決まり、`Changes` からならソースとプレビューを並べ、`Files` / `Docs` からならプレビューのみ。幅に余裕があるときは右側に見出しの目次を出す。編集中の内容はライブで反映される
 - **本物の TypeScript 型情報ホバー**: サーバー側で対象プロジェクトの tsconfig + node_modules を使って `ts.LanguageService` を起動し、hover / 型エラー / 定義ジャンプ / Find All References を提供 (Monaco 内蔵 TS ワーカーは不使用)
 - **ESLint 診断**: プロジェクトの `node_modules/.bin/eslint` を実行して行マーカー表示 (working tree を見ている範囲のみ)
 - **編集**: working tree のファイルはエディタ上で直接編集・保存できる
