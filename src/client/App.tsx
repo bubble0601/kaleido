@@ -21,11 +21,46 @@ import { useSidebarResize } from './hooks/useSidebarResize';
 import { useSse } from './hooks/useSse';
 import { monaco } from './monaco/setup';
 import { RangeSelector } from './components/RangeSelector';
-import { useUiStore } from './state/store';
+import { MarkdownPreview } from './components/MarkdownPreview';
+import { getPreviewKind } from './utils/preview';
+import { useUiStore, type PreviewMode } from './state/store';
 import { setFileOpenHandler } from './monaco/navigation';
 
 type ICodeEditor = import('monaco-editor/editor/editor.api.js').editor.ICodeEditor;
 import { getInitialUrlPath, getInitialUrlRange, syncUrl } from './utils/urlState';
+
+const PREVIEW_MODES: { mode: PreviewMode; label: string; icon: React.ReactNode }[] = [
+  {
+    mode: 'source',
+    label: 'Source',
+    icon: (
+      <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="M6 3.5 2.5 8 6 12.5" />
+        <path d="M10 3.5 13.5 8 10 12.5" />
+      </svg>
+    ),
+  },
+  {
+    mode: 'split',
+    label: 'Source and preview',
+    icon: (
+      <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden>
+        <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" />
+        <line x1="8" y1="2.5" x2="8" y2="13.5" />
+      </svg>
+    ),
+  },
+  {
+    mode: 'preview',
+    label: 'Preview',
+    icon: (
+      <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" aria-hidden>
+        <path d="M1.5 8s2.4-4 6.5-4 6.5 4 6.5 4-2.4 4-6.5 4-6.5-4-6.5-4z" />
+        <circle cx="8" cy="8" r="1.8" />
+      </svg>
+    ),
+  },
+];
 
 export function App() {
   const queryClient = useQueryClient();
@@ -36,11 +71,13 @@ export function App() {
     selectedPath,
     browsePath,
     viewMode,
+    previewMode,
     theme,
     setRange,
     setSelectedPath,
     setBrowsePath,
     setViewMode,
+    setPreviewMode,
   } = useUiStore();
   const setPendingReveal = useUiStore((state) => state.setPendingReveal);
   const pendingReveal = useUiStore((state) => state.pendingReveal);
@@ -124,11 +161,34 @@ export function App() {
   const [isFileCommentOpen, setIsFileCommentOpen] = useState(false);
   useEffect(() => setIsFileCommentOpen(false), [selectedPath, range]);
 
-  // 編集・保存 (modified 側が working tree のときのみ)
+  // 編集・保存 (modified 側が working tree のときのみ)。
+  // 編集中の内容はプレビューへライブ反映するため、モデルの変更も購読する
   const editTargetRef = useRef<ICodeEditor | null>(null);
+  const [liveContent, setLiveContent] = useState<string | null>(null);
+  const liveSubscriptionRef = useRef<{ dispose: () => void } | null>(null);
+  const liveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleEditTargetChange = useCallback((editor: ICodeEditor | null) => {
     editTargetRef.current = editor;
+    liveSubscriptionRef.current?.dispose();
+    liveSubscriptionRef.current = null;
+    if (liveTimerRef.current) clearTimeout(liveTimerRef.current);
+    if (!editor) {
+      setLiveContent(null);
+      return;
+    }
+    setLiveContent(editor.getValue());
+    liveSubscriptionRef.current = editor.onDidChangeModelContent(() => {
+      if (liveTimerRef.current) clearTimeout(liveTimerRef.current);
+      liveTimerRef.current = setTimeout(() => setLiveContent(editor.getValue()), 200);
+    });
   }, []);
+  useEffect(
+    () => () => {
+      liveSubscriptionRef.current?.dispose();
+      if (liveTimerRef.current) clearTimeout(liveTimerRef.current);
+    },
+    [],
+  );
   const [isDirty, setIsDirty] = useState(false);
   const handleDirtyChange = useCallback((dirty: boolean) => setIsDirty(dirty), []);
   useEffect(() => setIsDirty(false), [selectedPath, browsePath, range]);
@@ -162,6 +222,15 @@ export function App() {
   const contentRange = browsePath ? BROWSE_RANGE : range;
   const contents = useFileContent(contentRange, selectedFile);
   const isEditable = contents.data?.modified?.ref === 'working' && !contents.data.isTooLarge;
+
+  // Markdown などのプレビュー。比較を見ているときは既定でソース、単体表示なら既定でプレビュー
+  const previewKind = selectedFile ? getPreviewKind(selectedFile.path) : null;
+  useEffect(() => setPreviewMode(null), [selectedPath, browsePath, setPreviewMode]);
+  const effectivePreviewMode: PreviewMode =
+    previewKind === null
+      ? 'source'
+      : (previewMode ?? (effectiveViewMode === 'file' ? 'preview' : 'source'));
+  const previewContent = liveContent ?? contents.data?.modified?.content ?? '';
   const saveFile = useCallback(async () => {
     const editor = editTargetRef.current;
     if (!editor || !selectedFile) return;
@@ -429,8 +498,27 @@ export function App() {
                   </svg>
                 </button>
               )}
+              {previewKind && (
+                <div className="flex overflow-hidden rounded border border-neutral-300 dark:border-neutral-700">
+                  {PREVIEW_MODES.map(({ mode, label, icon }) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      title={label}
+                      className={`px-1.5 py-0.5 ${
+                        effectivePreviewMode === mode
+                          ? 'bg-neutral-300 text-neutral-900 dark:bg-neutral-600 dark:text-white'
+                          : 'bg-white text-neutral-500 hover:bg-neutral-100 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700'
+                      }`}
+                      onClick={() => setPreviewMode(mode)}
+                    >
+                      {icon}
+                    </button>
+                  ))}
+                </div>
+              )}
               {/* DiffEditor は folding 非対応のため File 表示のときのみ */}
-              {effectiveViewMode === 'file' && (
+              {effectiveViewMode === 'file' && effectivePreviewMode !== 'preview' && (
               <button
                 type="button"
                 className="rounded p-1 text-neutral-500 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:bg-neutral-700"
@@ -484,8 +572,11 @@ export function App() {
               )}
             </div>
           )}
-          <div className="min-h-0 flex-1">
+          <div className="flex min-h-0 flex-1">
           {selectedFile && contentRange && (selectedFile.isBinary || contents.data) ? (
+            <>
+            {effectivePreviewMode !== 'preview' && (
+            <div className="min-w-0 flex-1">
             <DiffView
               range={contentRange}
               file={selectedFile}
@@ -504,14 +595,28 @@ export function App() {
               onUpdateComment={handleUpdateComment}
               onDeleteComment={handleDeleteComment}
             />
+            </div>
+            )}
+            {effectivePreviewMode !== 'source' && (
+              <div className="min-w-0 flex-1 border-l border-neutral-200 dark:border-neutral-800">
+                <MarkdownPreview
+                  content={previewContent}
+                  path={selectedFile.path}
+                  theme={theme}
+                />
+              </div>
+            )}
+            </>
           ) : (
-            <Centered>
-              {selectedFile
-                ? 'Loading file…'
-                : isBrowseRange(range)
-                  ? 'Select a file from the tree'
-                  : 'No changes to show'}
-            </Centered>
+            <div className="flex-1">
+              <Centered>
+                {selectedFile
+                  ? 'Loading file…'
+                  : isBrowseRange(range)
+                    ? 'Select a file from the tree'
+                    : 'No changes to show'}
+              </Centered>
+            </div>
           )}
           </div>
         </main>

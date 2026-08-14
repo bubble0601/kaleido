@@ -8,6 +8,7 @@ git リポジトリなら diff レビューができ、**git 管理外のディ�
 
 - **サイドバーの 2 タブ**: `Changes` (比較対象のファイル) / `Files` (ルート配下の全ファイルツリー)。git 管理外では `Files` のみ
 - **表示モード**: side-by-side diff / inline diff / ファイル単体表示を切替。比較対象外のファイルは常に working tree の内容を単体表示する
+- **Markdown プレビュー**: `.md` などはソース / ソース+プレビュー / プレビューを切替。単体表示では既定でプレビュー、diff 表示では既定でソース。編集中の内容はライブで反映される
 - **本物の TypeScript 型情報ホバー**: サーバー側で対象プロジェクトの tsconfig + node_modules を使って `ts.LanguageService` を起動し、hover / 型エラー / 定義ジャンプ / Find All References を提供 (Monaco 内蔵 TS ワーカーは不使用)
 - **ESLint 診断**: プロジェクトの `node_modules/.bin/eslint` を実行して行マーカー表示 (working tree を見ている範囲のみ)
 - **編集**: working tree のファイルはエディタ上で直接編集・保存できる
@@ -23,7 +24,7 @@ git リポジトリなら diff レビューができ、**git 管理外のディ�
 
 ### 予定 (未実装)
 
-- **Markdown / HTML のプレビュー**: ソース表示とレンダリング結果を切り替える (あるいは並べる) 表示モード
+- **HTML のプレビュー**: Markdown と同じ枠組みで `.html` をレンダリング表示する
 
 ## 使い方
 
@@ -116,3 +117,4 @@ src/
 - **表示は DiffEditor 1 インスタンスに集約**: ファイル切替はモデル差し替えで行う。Markdown / HTML プレビューのようなエディタでない表示モードを足す場合は、この 1 インスタンスの外側に並置するビューとして持つ想定
 - **git は「あれば使う」層**: ルートが git の toplevel でなければ `gitDiff` / `gitRefs` は `null` になり、比較 API は空を返す。ファイル本文は常に working tree をファイルシステムから読むため、閲覧・編集・型情報は git の有無に依存しない
 - **比較なしの状態も擬似 range で表現**: `{ target: 'browse', base: 'browse' }` を 1 つの範囲として扱うことで、コメント保存キー・URL 同期・クエリキャッシュを diff モードと共通化している
+- **プレビューは sandbox iframe に隔離**: marked は生の HTML を素通しするため、`allow-scripts` も `allow-same-origin` も与えない iframe に `srcdoc` で流し込む。開いているファイルのスクリプトが同一オリジンで動いて `/api/file/save` などを叩くことはない。相対画像は `/api/raw` (画像の Content-Type のみ、`nosniff` 付き) 経由で表示し、相対リンクはそのファイルをビューアの新しいタブで開く

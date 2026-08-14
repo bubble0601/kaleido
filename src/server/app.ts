@@ -15,6 +15,26 @@ import { applyExcludes, listDirectoryFiles } from './files/tree.js';
 
 const VERSION = '0.1.0';
 
+const MAX_RAW_BYTES = 10 * 1024 * 1024;
+
+/** /api/raw で配信を許可する拡張子と Content-Type (画像のみ) */
+const IMAGE_CONTENT_TYPES: Record<string, string> = {
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.avif': 'image/avif',
+  '.bmp': 'image/bmp',
+  '.ico': 'image/x-icon',
+  '.svg': 'image/svg+xml',
+};
+
+function extensionOf(path: string): string {
+  const index = path.lastIndexOf('.');
+  return index === -1 ? '' : path.slice(index).toLowerCase();
+}
+
 const rangeSchema = z.object({
   target: z.string().min(1),
   base: z.string().min(1),
@@ -172,6 +192,31 @@ export function createApp(ctx: AppContext): Hono {
         status: q.status,
       });
       return c.json(contents);
+    },
+  );
+
+  // Markdown プレビューから参照される画像。
+  // HTML など実行され得る型は返さない (同一オリジンで配信するため)
+  app.get(
+    '/api/raw',
+    zValidator('query', z.object({ path: z.string().min(1) })),
+    async (c) => {
+      const { path } = c.req.valid('query');
+      const contentType = IMAGE_CONTENT_TYPES[extensionOf(path)];
+      if (!contentType) return c.json({ error: 'Unsupported file type' }, 415);
+      let buf: Buffer;
+      try {
+        buf = await ctx.fileContent.readBlob('working', path);
+      } catch {
+        return c.json({ error: 'File not found' }, 404);
+      }
+      if (buf.length > MAX_RAW_BYTES) return c.json({ error: 'File too large' }, 413);
+      return c.body(new Uint8Array(buf), 200, {
+        'Content-Type': contentType,
+        'X-Content-Type-Options': 'nosniff',
+        'Content-Security-Policy': "default-src 'none'; sandbox",
+        'Cache-Control': 'no-cache',
+      });
     },
   );
 
