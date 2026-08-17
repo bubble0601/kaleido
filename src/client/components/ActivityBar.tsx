@@ -4,8 +4,6 @@ interface ActivityBarProps {
   activeTab: SidebarTab;
   /** false のとき Changes は出さない */
   isGitRepo: boolean;
-  /** サイドバーが畳まれているか (畳まれているときは選択中でもハイライトしない) */
-  isCollapsed: boolean;
   onSelect: (tab: SidebarTab) => void;
 }
 
@@ -58,13 +56,14 @@ const ITEMS: { tab: SidebarTab; label: string; icon: React.ReactNode }[] = [
 /**
  * VS Code の Activity Bar 相当。サイドバーに何を出すかを切り替える。
  * 選択中のものをもう一度押すとサイドバーを畳む。
+ * 畳んでいる間も、次に開く対象が分かるように選択状態は出したままにする。
  */
-export function ActivityBar({ activeTab, isGitRepo, isCollapsed, onSelect }: ActivityBarProps) {
+export function ActivityBar({ activeTab, isGitRepo, onSelect }: ActivityBarProps) {
   const items = isGitRepo ? ITEMS : ITEMS.filter((item) => item.tab !== 'changes');
   return (
     <div className="flex w-11 shrink-0 flex-col border-r border-neutral-200 bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-950">
       {items.map((item) => {
-        const isActive = activeTab === item.tab && !isCollapsed;
+        const isActive = activeTab === item.tab;
         return (
           <button
             key={item.tab}

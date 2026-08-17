@@ -486,12 +486,7 @@ export function App() {
         </div>
       )}
       <div className="flex min-h-0 flex-1">
-        <ActivityBar
-          activeTab={sidebarTab}
-          isGitRepo={isGitRepo}
-          isCollapsed={sidebar.isCollapsed}
-          onSelect={selectSidebarTab}
-        />
+        <ActivityBar activeTab={sidebarTab} isGitRepo={isGitRepo} onSelect={selectSidebarTab} />
         {!sidebar.isCollapsed && (
           <aside
             style={{ width: sidebar.width }}
