@@ -1,0 +1,1266 @@
+[
+  {
+    "name": "@antfu/install-pkg",
+    "version": "1.1.0",
+    "license": "MIT",
+    "repository": "https://github.com/antfu/install-pkg",
+    "copyright": "Copyright (c) 2021 Anthony Fu <https://github.com/antfu>",
+    "publisher": "Anthony Fu"
+  },
+  {
+    "name": "@braintree/sanitize-url",
+    "version": "7.1.2",
+    "license": "MIT",
+    "repository": "https://github.com/braintree/sanitize-url",
+    "copyright": "Copyright (c) 2017 Braintree",
+    "publisher": ""
+  },
+  {
+    "name": "@chevrotain/types",
+    "version": "11.1.2",
+    "license": "Apache-2.0",
+    "repository": "https://github.com/Chevrotain/chevrotain",
+    "copyright": "",
+    "publisher": "Shahar Soel"
+  },
+  {
+    "name": "@hono/node-server",
+    "version": "2.1.0",
+    "license": "MIT",
+    "repository": "https://github.com/honojs/node-server",
+    "copyright": "Copyright (c) 2022 - present, Yusuke Wada and Hono contributors",
+    "publisher": "Yusuke Wada"
+  },
+  {
+    "name": "@hono/zod-validator",
+    "version": "0.9.0",
+    "license": "MIT",
+    "repository": "https://github.com/honojs/middleware",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@iconify/react",
+    "version": "6.0.2",
+    "license": "MIT",
+    "repository": "https://github.com/iconify/iconify",
+    "copyright": "Copyright (c) 2019-PRESENT Vjacheslav Trushkin",
+    "publisher": "Vjacheslav Trushkin"
+  },
+  {
+    "name": "@iconify/types",
+    "version": "2.0.0",
+    "license": "MIT",
+    "repository": "https://github.com/iconify/iconify",
+    "copyright": "Copyright (c) 2021 - 2022 Vjacheslav Trushkin / Iconify OÜ",
+    "publisher": "Vjacheslav Trushkin"
+  },
+  {
+    "name": "@iconify/utils",
+    "version": "3.1.4",
+    "license": "MIT",
+    "repository": "https://github.com/iconify/iconify",
+    "copyright": "Copyright (c) 2021-PRESENT Vjacheslav Trushkin",
+    "publisher": "Vjacheslav Trushkin"
+  },
+  {
+    "name": "@kwsites/file-exists",
+    "version": "1.1.1",
+    "license": "MIT",
+    "repository": "https://github.com/kwsites/file-exists",
+    "copyright": "Copyright (c) 2015 Steve King",
+    "publisher": "Steve King"
+  },
+  {
+    "name": "@kwsites/promise-deferred",
+    "version": "1.1.1",
+    "license": "MIT",
+    "repository": "https://github.com/kwsites/promise-deferred",
+    "copyright": "Copyright (c) 2018 kwsites",
+    "publisher": "Steve King"
+  },
+  {
+    "name": "@mermaid-js/parser",
+    "version": "1.2.0",
+    "license": "MIT",
+    "repository": "https://github.com/mermaid-js/mermaid",
+    "copyright": "Copyright (c) 2023 Yokozuna59",
+    "publisher": "Yokozuna59"
+  },
+  {
+    "name": "@parcel/watcher",
+    "version": "2.6.0",
+    "license": "MIT",
+    "repository": "https://github.com/parcel-bundler/watcher",
+    "copyright": "Copyright (c) 2017-present Devon Govett",
+    "publisher": ""
+  },
+  {
+    "name": "@simple-git/args-pathspec",
+    "version": "1.0.3",
+    "license": "MIT",
+    "repository": "https://github.com/steveukx/git-js",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@simple-git/argv-parser",
+    "version": "1.1.1",
+    "license": "MIT",
+    "repository": "https://github.com/steveukx/git-js",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@tanstack/query-core",
+    "version": "5.101.4",
+    "license": "MIT",
+    "repository": "https://github.com/TanStack/query",
+    "copyright": "Copyright (c) 2021-present Tanner Linsley",
+    "publisher": "tannerlinsley"
+  },
+  {
+    "name": "@tanstack/react-query",
+    "version": "5.101.4",
+    "license": "MIT",
+    "repository": "https://github.com/TanStack/query",
+    "copyright": "Copyright (c) 2021-present Tanner Linsley",
+    "publisher": "tannerlinsley"
+  },
+  {
+    "name": "@types/d3",
+    "version": "7.4.3",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-array",
+    "version": "3.2.2",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-axis",
+    "version": "3.0.6",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-brush",
+    "version": "3.0.6",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-chord",
+    "version": "3.0.6",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-color",
+    "version": "3.1.3",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-contour",
+    "version": "3.0.6",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-delaunay",
+    "version": "6.0.4",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-dispatch",
+    "version": "3.0.7",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-drag",
+    "version": "3.0.7",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-dsv",
+    "version": "3.0.7",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-ease",
+    "version": "3.0.2",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-fetch",
+    "version": "3.0.7",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-force",
+    "version": "3.0.10",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-format",
+    "version": "3.0.4",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-geo",
+    "version": "3.1.1",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-hierarchy",
+    "version": "3.1.7",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-interpolate",
+    "version": "3.0.4",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-path",
+    "version": "3.1.1",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-polygon",
+    "version": "3.0.2",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-quadtree",
+    "version": "3.0.6",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-random",
+    "version": "3.0.4",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-scale",
+    "version": "4.0.9",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-scale-chromatic",
+    "version": "3.1.0",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-selection",
+    "version": "3.0.11",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-shape",
+    "version": "3.1.8",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-time",
+    "version": "3.0.4",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-time-format",
+    "version": "4.0.3",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-timer",
+    "version": "3.0.2",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-transition",
+    "version": "3.0.9",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/d3-zoom",
+    "version": "3.0.8",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/geojson",
+    "version": "7946.0.16",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/react",
+    "version": "19.2.18",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@types/trusted-types",
+    "version": "2.0.7",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "copyright": "",
+    "publisher": ""
+  },
+  {
+    "name": "@upsetjs/venn.js",
+    "version": "2.0.0",
+    "license": "MIT",
+    "repository": "https://github.com/upsetjs/venn.js",
+    "copyright": "Copyright (c) 2013 Ben Frederickson. Copyright (c) 2021 Samuel Gratzl",
+    "publisher": "Ben Frederickson"
+  },
+  {
+    "name": "bundle-name",
+    "version": "4.1.0",
+    "license": "MIT",
+    "repository": "https://github.com/sindresorhus/bundle-name",
+    "copyright": "Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com)",
+    "publisher": "Sindre Sorhus"
+  },
+  {
+    "name": "commander",
+    "version": "15.0.0",
+    "license": "MIT",
+    "repository": "https://github.com/tj/commander.js",
+    "copyright": "Copyright (c) 2011 TJ Holowaychuk <tj@vision-media.ca>",
+    "publisher": "TJ Holowaychuk"
+  },
+  {
+    "name": "commander",
+    "version": "7.2.0",
+    "license": "MIT",
+    "repository": "https://github.com/tj/commander.js",
+    "copyright": "Copyright (c) 2011 TJ Holowaychuk <tj@vision-media.ca>",
+    "publisher": "TJ Holowaychuk"
+  },
+  {
+    "name": "commander",
+    "version": "8.3.0",
+    "license": "MIT",
+    "repository": "https://github.com/tj/commander.js",
+    "copyright": "Copyright (c) 2011 TJ Holowaychuk <tj@vision-media.ca>",
+    "publisher": "TJ Holowaychuk"
+  },
+  {
+    "name": "cose-base",
+    "version": "1.0.3",
+    "license": "MIT",
+    "repository": "https://github.com/iVis-at-Bilkent/cose-base",
+    "copyright": "Copyright (c) 2019 - present, iVis@Bilkent.",
+    "publisher": ""
+  },
+  {
+    "name": "cose-base",
+    "version": "2.2.0",
+    "license": "MIT",
+    "repository": "https://github.com/iVis-at-Bilkent/cose-base",
+    "copyright": "Copyright (c) 2019 - present, iVis@Bilkent.",
+    "publisher": ""
+  },
+  {
+    "name": "csstype",
+    "version": "3.2.3",
+    "license": "MIT",
+    "repository": "https://github.com/frenic/csstype",
+    "copyright": "Copyright (c) 2017-2018 Fredrik Nicol",
+    "publisher": "Fredrik Nicol"
+  },
+  {
+    "name": "cytoscape",
+    "version": "3.34.1",
+    "license": "MIT",
+    "repository": "https://github.com/cytoscape/cytoscape.js",
+    "copyright": "Copyright (c) 2016-2026, The Cytoscape Consortium.",
+    "publisher": ""
+  },
+  {
+    "name": "cytoscape-cose-bilkent",
+    "version": "4.1.0",
+    "license": "MIT",
+    "repository": "https://github.com/cytoscape/cytoscape.js-cose-bilkent",
+    "copyright": "Copyright (c) 2016-2018, The Cytoscape Consortium.",
+    "publisher": ""
+  },
+  {
+    "name": "cytoscape-fcose",
+    "version": "2.2.0",
+    "license": "MIT",
+    "repository": "https://github.com/iVis-at-Bilkent/cytoscape.js-fcose",
+    "copyright": "Copyright (c) 2018 - present, iVis-at-Bilkent.",
+    "publisher": "iVis-at-Bilkent"
+  },
+  {
+    "name": "d3",
+    "version": "7.9.0",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3",
+    "copyright": "Copyright 2010-2023 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-array",
+    "version": "2.12.1",
+    "license": "BSD-3-Clause",
+    "repository": "https://github.com/d3/d3-array",
+    "copyright": "Copyright 2010-2020 Mike Bostock. All rights reserved.",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-array",
+    "version": "3.2.4",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-array",
+    "copyright": "Copyright 2010-2023 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-axis",
+    "version": "3.0.0",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-axis",
+    "copyright": "Copyright 2010-2021 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-brush",
+    "version": "3.0.0",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-brush",
+    "copyright": "Copyright 2010-2021 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-chord",
+    "version": "3.0.1",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-chord",
+    "copyright": "Copyright 2010-2021 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-color",
+    "version": "3.1.0",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-color",
+    "copyright": "Copyright 2010-2022 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-contour",
+    "version": "4.0.2",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-contour",
+    "copyright": "Copyright 2012-2023 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-delaunay",
+    "version": "6.0.4",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-delaunay",
+    "copyright": "Copyright 2018-2021 Observable, Inc.. Copyright 2021 Mapbox",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-dispatch",
+    "version": "3.0.1",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-dispatch",
+    "copyright": "Copyright 2010-2021 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-drag",
+    "version": "3.0.0",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-drag",
+    "copyright": "Copyright 2010-2021 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-dsv",
+    "version": "3.0.1",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-dsv",
+    "copyright": "Copyright 2013-2021 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-ease",
+    "version": "3.0.1",
+    "license": "BSD-3-Clause",
+    "repository": "https://github.com/d3/d3-ease",
+    "copyright": "Copyright 2010-2021 Mike Bostock. Copyright 2001 Robert Penner. All rights reserved.",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-fetch",
+    "version": "3.0.1",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-fetch",
+    "copyright": "Copyright 2016-2021 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-force",
+    "version": "3.0.0",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-force",
+    "copyright": "Copyright 2010-2021 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-format",
+    "version": "3.1.2",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-format",
+    "copyright": "Copyright 2010-2026 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-geo",
+    "version": "3.1.1",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-geo",
+    "copyright": "Copyright 2010-2024 Mike Bostock*",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-hierarchy",
+    "version": "3.1.2",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-hierarchy",
+    "copyright": "Copyright 2010-2021 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-interpolate",
+    "version": "3.0.1",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-interpolate",
+    "copyright": "Copyright 2010-2021 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-path",
+    "version": "1.0.9",
+    "license": "BSD-3-Clause",
+    "repository": "https://github.com/d3/d3-path",
+    "copyright": "Copyright 2015-2016 Mike Bostock. All rights reserved.",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-path",
+    "version": "3.1.0",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-path",
+    "copyright": "Copyright 2015-2022 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-polygon",
+    "version": "3.0.1",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-polygon",
+    "copyright": "Copyright 2010-2021 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-quadtree",
+    "version": "3.0.1",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-quadtree",
+    "copyright": "Copyright 2010-2021 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-random",
+    "version": "3.0.1",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-random",
+    "copyright": "Copyright 2010-2021 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-sankey",
+    "version": "0.12.3",
+    "license": "BSD-3-Clause",
+    "repository": "https://github.com/d3/d3-sankey",
+    "copyright": "Copyright 2015, Mike Bostock. All rights reserved.",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-scale",
+    "version": "4.0.2",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-scale",
+    "copyright": "Copyright 2010-2021 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-scale-chromatic",
+    "version": "3.1.0",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-scale-chromatic",
+    "copyright": "Copyright 2010-2024 Mike Bostock*",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-selection",
+    "version": "3.0.0",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-selection",
+    "copyright": "Copyright 2010-2021 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-shape",
+    "version": "1.3.7",
+    "license": "BSD-3-Clause",
+    "repository": "https://github.com/d3/d3-shape",
+    "copyright": "Copyright 2010-2015 Mike Bostock. All rights reserved.",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-shape",
+    "version": "3.2.0",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-shape",
+    "copyright": "Copyright 2010-2022 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-time",
+    "version": "3.1.0",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-time",
+    "copyright": "Copyright 2010-2022 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-time-format",
+    "version": "4.1.0",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-time-format",
+    "copyright": "Copyright 2010-2021 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-timer",
+    "version": "3.0.1",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-timer",
+    "copyright": "Copyright 2010-2021 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-transition",
+    "version": "3.0.1",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-transition",
+    "copyright": "Copyright 2010-2021 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "d3-zoom",
+    "version": "3.0.0",
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-zoom",
+    "copyright": "Copyright 2010-2021 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "dagre-d3-es",
+    "version": "7.0.14",
+    "license": "MIT",
+    "repository": "https://github.com/tbo47/dagre-es",
+    "copyright": "Copyright (c) 2022-2024 Thibaut Lassalle, David Newell, Alois Klink, Sidharth Vinod and dagre-es contributors",
+    "publisher": ""
+  },
+  {
+    "name": "dayjs",
+    "version": "1.11.21",
+    "license": "MIT",
+    "repository": "https://github.com/iamkun/dayjs",
+    "copyright": "Copyright (c) 2018-present, iamkun",
+    "publisher": "iamkun"
+  },
+  {
+    "name": "debug",
+    "version": "4.4.3",
+    "license": "MIT",
+    "repository": "https://github.com/debug-js/debug",
+    "copyright": "Copyright (c) 2014-2017 TJ Holowaychuk <tj@vision-media.ca>. Copyright (c) 2018-2021 Josh Junon",
+    "publisher": "Josh Junon"
+  },
+  {
+    "name": "default-browser",
+    "version": "5.5.0",
+    "license": "MIT",
+    "repository": "https://github.com/sindresorhus/default-browser",
+    "copyright": "Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com)",
+    "publisher": "Sindre Sorhus"
+  },
+  {
+    "name": "default-browser-id",
+    "version": "5.0.1",
+    "license": "MIT",
+    "repository": "https://github.com/sindresorhus/default-browser-id",
+    "copyright": "Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com)",
+    "publisher": "Sindre Sorhus"
+  },
+  {
+    "name": "define-lazy-prop",
+    "version": "3.0.0",
+    "license": "MIT",
+    "repository": "https://github.com/sindresorhus/define-lazy-prop",
+    "copyright": "Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com)",
+    "publisher": "Sindre Sorhus"
+  },
+  {
+    "name": "delaunator",
+    "version": "5.1.0",
+    "license": "ISC",
+    "repository": "https://github.com/mapbox/delaunator",
+    "copyright": "Copyright (c) 2026, Mapbox",
+    "publisher": "Vladimir Agafonkin"
+  },
+  {
+    "name": "detect-libc",
+    "version": "2.1.2",
+    "license": "Apache-2.0",
+    "repository": "https://github.com/lovell/detect-libc",
+    "copyright": "",
+    "publisher": "Lovell Fuller"
+  },
+  {
+    "name": "dompurify",
+    "version": "3.4.8",
+    "license": "(MPL-2.0 OR Apache-2.0)",
+    "repository": "https://github.com/cure53/DOMPurify",
+    "copyright": "",
+    "publisher": "Dr.-Ing. Mario Heiderich, Cure53"
+  },
+  {
+    "name": "env-paths",
+    "version": "4.0.0",
+    "license": "MIT",
+    "repository": "https://github.com/sindresorhus/env-paths",
+    "copyright": "Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com)",
+    "publisher": "Sindre Sorhus"
+  },
+  {
+    "name": "es-toolkit",
+    "version": "1.50.0",
+    "license": "MIT",
+    "repository": "https://github.com/toss/es-toolkit",
+    "copyright": "Copyright (c) 2024 Viva Republica, Inc.",
+    "publisher": ""
+  },
+  {
+    "name": "github-markdown-css",
+    "version": "5.9.0",
+    "license": "MIT",
+    "repository": "https://github.com/sindresorhus/github-markdown-css",
+    "copyright": "Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com)",
+    "publisher": "Sindre Sorhus"
+  },
+  {
+    "name": "hachure-fill",
+    "version": "0.5.2",
+    "license": "MIT",
+    "repository": "https://github.com/pshihn/hachure-fill",
+    "copyright": "Copyright (c) 2023 Preet Shihn",
+    "publisher": "Preet Shihn"
+  },
+  {
+    "name": "hono",
+    "version": "4.13.1",
+    "license": "MIT",
+    "repository": "https://github.com/honojs/hono",
+    "copyright": "Copyright (c) 2021 - present, Yusuke Wada and Hono contributors",
+    "publisher": "Yusuke Wada"
+  },
+  {
+    "name": "iconv-lite",
+    "version": "0.6.3",
+    "license": "MIT",
+    "repository": "https://github.com/ashtuchkin/iconv-lite",
+    "copyright": "Copyright (c) 2011 Alexander Shtuchkin",
+    "publisher": "Alexander Shtuchkin"
+  },
+  {
+    "name": "import-meta-resolve",
+    "version": "4.2.0",
+    "license": "MIT",
+    "repository": "https://github.com/wooorm/import-meta-resolve",
+    "copyright": "Copyright (c) Titus Wormer <mailto:tituswormer@gmail.com>",
+    "publisher": "Titus Wormer"
+  },
+  {
+    "name": "internmap",
+    "version": "1.0.1",
+    "license": "ISC",
+    "repository": "https://github.com/mbostock/internmap",
+    "copyright": "Copyright 2021 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "internmap",
+    "version": "2.0.3",
+    "license": "ISC",
+    "repository": "https://github.com/mbostock/internmap",
+    "copyright": "Copyright 2021 Mike Bostock",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "is-docker",
+    "version": "3.0.0",
+    "license": "MIT",
+    "repository": "https://github.com/sindresorhus/is-docker",
+    "copyright": "Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com)",
+    "publisher": "Sindre Sorhus"
+  },
+  {
+    "name": "is-extglob",
+    "version": "2.1.1",
+    "license": "MIT",
+    "repository": "https://github.com/jonschlinkert/is-extglob",
+    "copyright": "Copyright (c) 2014-2016, Jon Schlinkert",
+    "publisher": "Jon Schlinkert"
+  },
+  {
+    "name": "is-glob",
+    "version": "4.0.3",
+    "license": "MIT",
+    "repository": "https://github.com/micromatch/is-glob",
+    "copyright": "Copyright (c) 2014-2017, Jon Schlinkert.",
+    "publisher": "Jon Schlinkert"
+  },
+  {
+    "name": "is-in-ssh",
+    "version": "1.0.0",
+    "license": "MIT",
+    "repository": "https://github.com/sindresorhus/is-in-ssh",
+    "copyright": "Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com)",
+    "publisher": "Sindre Sorhus"
+  },
+  {
+    "name": "is-inside-container",
+    "version": "1.0.0",
+    "license": "MIT",
+    "repository": "https://github.com/sindresorhus/is-inside-container",
+    "copyright": "Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com)",
+    "publisher": "Sindre Sorhus"
+  },
+  {
+    "name": "is-safe-filename",
+    "version": "0.1.1",
+    "license": "MIT",
+    "repository": "https://github.com/sindresorhus/is-safe-filename",
+    "copyright": "Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com)",
+    "publisher": "Sindre Sorhus"
+  },
+  {
+    "name": "is-wsl",
+    "version": "3.1.1",
+    "license": "MIT",
+    "repository": "https://github.com/sindresorhus/is-wsl",
+    "copyright": "Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com)",
+    "publisher": "Sindre Sorhus"
+  },
+  {
+    "name": "katex",
+    "version": "0.16.47",
+    "license": "MIT",
+    "repository": "https://github.com/KaTeX/KaTeX",
+    "copyright": "Copyright (c) 2013-2020 Khan Academy and other contributors",
+    "publisher": ""
+  },
+  {
+    "name": "khroma",
+    "version": "2.1.0",
+    "license": "MIT*",
+    "repository": "https://github.com/fabiospampinato/khroma",
+    "copyright": "Copyright (c) 2019-present Fabio Spampinato, Andrew Maney",
+    "publisher": ""
+  },
+  {
+    "name": "layout-base",
+    "version": "1.0.2",
+    "license": "MIT",
+    "repository": "https://github.com/iVis-at-Bilkent/layout-base",
+    "copyright": "Copyright (c) 2019 iVis@Bilkent",
+    "publisher": ""
+  },
+  {
+    "name": "layout-base",
+    "version": "2.0.1",
+    "license": "MIT",
+    "repository": "https://github.com/iVis-at-Bilkent/layout-base",
+    "copyright": "Copyright (c) 2019 iVis@Bilkent",
+    "publisher": ""
+  },
+  {
+    "name": "lodash-es",
+    "version": "4.18.1",
+    "license": "MIT",
+    "repository": "https://github.com/lodash/lodash",
+    "copyright": "Copyright OpenJS Foundation and other contributors <https://openjsf.org/>",
+    "publisher": "John-David Dalton"
+  },
+  {
+    "name": "marked",
+    "version": "14.0.0",
+    "license": "MIT",
+    "repository": "https://github.com/markedjs/marked",
+    "copyright": "Copyright (c) 2018+, MarkedJS (https://github.com/markedjs/). Copyright (c) 2011-2018, Christopher Jeffrey (https://github.com/chjj/)*",
+    "publisher": "Christopher Jeffrey"
+  },
+  {
+    "name": "marked",
+    "version": "16.4.2",
+    "license": "MIT",
+    "repository": "https://github.com/markedjs/marked",
+    "copyright": "Copyright (c) 2018+, MarkedJS (https://github.com/markedjs/). Copyright (c) 2011-2018, Christopher Jeffrey (https://github.com/chjj/)*",
+    "publisher": "Christopher Jeffrey"
+  },
+  {
+    "name": "marked",
+    "version": "18.0.9",
+    "license": "MIT",
+    "repository": "https://github.com/markedjs/marked",
+    "copyright": "Copyright (c) 2018+, MarkedJS (https://github.com/markedjs/). Copyright (c) 2011-2018, Christopher Jeffrey (https://github.com/chjj/)*",
+    "publisher": "Christopher Jeffrey"
+  },
+  {
+    "name": "mermaid",
+    "version": "11.16.1",
+    "license": "MIT",
+    "repository": "https://github.com/mermaid-js/mermaid",
+    "copyright": "Copyright (c) 2014 - 2022 Knut Sveidqvist",
+    "publisher": "Knut Sveidqvist"
+  },
+  {
+    "name": "monaco-editor",
+    "version": "0.56.0",
+    "license": "MIT",
+    "repository": "https://github.com/microsoft/monaco-editor",
+    "copyright": "Copyright (c) 2016 - present Microsoft Corporation",
+    "publisher": "Microsoft Corporation"
+  },
+  {
+    "name": "ms",
+    "version": "2.1.3",
+    "license": "MIT",
+    "repository": "https://github.com/vercel/ms",
+    "copyright": "Copyright (c) 2020 Vercel, Inc.",
+    "publisher": ""
+  },
+  {
+    "name": "nanoid",
+    "version": "6.0.1",
+    "license": "MIT",
+    "repository": "https://github.com/ai/nanoid",
+    "copyright": "Copyright 2017 Andrey Sitnik <andrey@sitnik.es>",
+    "publisher": "Andrey Sitnik"
+  },
+  {
+    "name": "node-addon-api",
+    "version": "7.1.1",
+    "license": "MIT",
+    "repository": "https://github.com/nodejs/node-addon-api",
+    "copyright": "Copyright (c) 2017 [Node.js API collaborators](https://github.com/nodejs/node-addon-api#collaborators)",
+    "publisher": ""
+  },
+  {
+    "name": "open",
+    "version": "11.0.0",
+    "license": "MIT",
+    "repository": "https://github.com/sindresorhus/open",
+    "copyright": "Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com)",
+    "publisher": "Sindre Sorhus"
+  },
+  {
+    "name": "package-manager-detector",
+    "version": "1.8.0",
+    "license": "MIT",
+    "repository": "https://github.com/antfu-collective/package-manager-detector",
+    "copyright": "Copyright (c) 2020-PRESENT Anthony Fu <https://github.com/antfu>",
+    "publisher": "Anthony Fu"
+  },
+  {
+    "name": "path-data-parser",
+    "version": "0.1.0",
+    "license": "MIT",
+    "repository": "https://github.com/pshihn/path-data-parser",
+    "copyright": "Copyright (c) 2020 Preet Shihn",
+    "publisher": "Preet Shihn"
+  },
+  {
+    "name": "picomatch",
+    "version": "4.0.5",
+    "license": "MIT",
+    "repository": "https://github.com/micromatch/picomatch",
+    "copyright": "Copyright (c) 2017-present, Jon Schlinkert.",
+    "publisher": "Jon Schlinkert"
+  },
+  {
+    "name": "points-on-curve",
+    "version": "0.2.0",
+    "license": "MIT",
+    "repository": "https://github.com/pshihn/bezier-points",
+    "copyright": "Copyright (c) 2020 Preet Shihn",
+    "publisher": "Preet Shihn"
+  },
+  {
+    "name": "points-on-path",
+    "version": "0.2.1",
+    "license": "MIT",
+    "repository": "https://github.com/pshihn/points-on-path",
+    "copyright": "Copyright (c) 2020 Preet",
+    "publisher": "Preet Shihn"
+  },
+  {
+    "name": "powershell-utils",
+    "version": "0.1.0",
+    "license": "MIT",
+    "repository": "https://github.com/sindresorhus/powershell-utils",
+    "copyright": "Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com)",
+    "publisher": "Sindre Sorhus"
+  },
+  {
+    "name": "react",
+    "version": "19.2.8",
+    "license": "MIT",
+    "repository": "https://github.com/react/react",
+    "copyright": "Copyright (c) Meta Platforms, Inc. and affiliates.",
+    "publisher": ""
+  },
+  {
+    "name": "react-dom",
+    "version": "19.2.8",
+    "license": "MIT",
+    "repository": "https://github.com/react/react",
+    "copyright": "Copyright (c) Meta Platforms, Inc. and affiliates.",
+    "publisher": ""
+  },
+  {
+    "name": "robust-predicates",
+    "version": "3.0.3",
+    "license": "Unlicense",
+    "repository": "https://github.com/mourner/robust-predicates",
+    "copyright": "",
+    "publisher": "Vladimir Agafonkin"
+  },
+  {
+    "name": "roughjs",
+    "version": "4.6.6",
+    "license": "MIT",
+    "repository": "https://github.com/pshihn/rough",
+    "copyright": "Copyright (c) 2019 Preet Shihn",
+    "publisher": "Preet Shihn"
+  },
+  {
+    "name": "run-applescript",
+    "version": "7.1.0",
+    "license": "MIT",
+    "repository": "https://github.com/sindresorhus/run-applescript",
+    "copyright": "Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com)",
+    "publisher": "Sindre Sorhus"
+  },
+  {
+    "name": "rw",
+    "version": "1.3.3",
+    "license": "BSD-3-Clause",
+    "repository": "https://github.com/mbostock/rw",
+    "copyright": "Copyright (c) 2014-2016, Michael Bostock. All rights reserved.",
+    "publisher": "Mike Bostock"
+  },
+  {
+    "name": "safer-buffer",
+    "version": "2.1.2",
+    "license": "MIT",
+    "repository": "https://github.com/ChALkeR/safer-buffer",
+    "copyright": "Copyright (c) 2018 Nikita Skovoroda <chalkerx@gmail.com>",
+    "publisher": "Nikita Skovoroda"
+  },
+  {
+    "name": "scheduler",
+    "version": "0.27.0",
+    "license": "MIT",
+    "repository": "https://github.com/facebook/react",
+    "copyright": "Copyright (c) Meta Platforms, Inc. and affiliates.",
+    "publisher": ""
+  },
+  {
+    "name": "simple-git",
+    "version": "3.36.0",
+    "license": "MIT",
+    "repository": "https://github.com/steveukx/git-js",
+    "copyright": "",
+    "publisher": "Steve King"
+  },
+  {
+    "name": "stylis",
+    "version": "4.4.0",
+    "license": "MIT",
+    "repository": "https://github.com/thysultan/stylis.js",
+    "copyright": "Copyright (c) 2016-present Sultan Tarimo",
+    "publisher": "Sultan Tarimo"
+  },
+  {
+    "name": "tinyexec",
+    "version": "1.3.0",
+    "license": "MIT",
+    "repository": "https://github.com/tinylibs/tinyexec",
+    "copyright": "Copyright (c) 2024 Tinylibs",
+    "publisher": "James Garbutt"
+  },
+  {
+    "name": "ts-dedent",
+    "version": "2.3.0",
+    "license": "MIT",
+    "repository": "https://github.com/tamino-martinius/node-ts-dedent",
+    "copyright": "Copyright (c) 2018 Tamino Martinius",
+    "publisher": "Tamino Martinius"
+  },
+  {
+    "name": "typescript",
+    "version": "5.9.3",
+    "license": "Apache-2.0",
+    "repository": "https://github.com/microsoft/TypeScript",
+    "copyright": "",
+    "publisher": "Microsoft Corp."
+  },
+  {
+    "name": "uuid",
+    "version": "14.0.1",
+    "license": "MIT",
+    "repository": "https://github.com/uuidjs/uuid",
+    "copyright": "Copyright (c) 2010-2020 Robert Kieffer and other contributors",
+    "publisher": ""
+  },
+  {
+    "name": "wsl-utils",
+    "version": "0.3.1",
+    "license": "MIT",
+    "repository": "https://github.com/sindresorhus/wsl-utils",
+    "copyright": "Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com)",
+    "publisher": "Sindre Sorhus"
+  },
+  {
+    "name": "zod",
+    "version": "4.4.3",
+    "license": "MIT",
+    "repository": "https://github.com/colinhacks/zod",
+    "copyright": "Copyright (c) 2025 Colin McDonnell",
+    "publisher": "Colin McDonnell"
+  },
+  {
+    "name": "zustand",
+    "version": "5.0.14",
+    "license": "MIT",
+    "repository": "https://github.com/pmndrs/zustand",
+    "copyright": "Copyright (c) 2019 Paul Henschel",
+    "publisher": "Paul Henschel"
+  }
+]

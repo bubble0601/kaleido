@@ -77,7 +77,7 @@ export function Toolbar({
   isDiffAvailable = true,
   children,
 }: ToolbarProps) {
-  const { theme, setTheme } = useUiStore();
+  const setSettingsOpen = useUiStore((state) => state.setSettingsOpen);
   return (
     <div className="flex h-10 shrink-0 items-center gap-3 border-b border-neutral-200 bg-neutral-100 px-3 dark:border-neutral-800 dark:bg-neutral-900">
       {onToggleSidebar && (
@@ -127,11 +127,20 @@ export function Toolbar({
       )}
       <button
         type="button"
-        className={BUTTON_CLASS}
-        title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+        className="rounded p-1 text-neutral-500 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:bg-neutral-700"
+        title="Settings"
+        aria-label="Settings"
+        onClick={() => setSettingsOpen(true)}
       >
-        {theme === 'dark' ? '☀' : '🌙'}
+        <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <circle cx="8" cy="8" r="4.6" />
+          <circle cx="8" cy="8" r="1.7" />
+          {/* 歯: リングの外側に短く出す */}
+          <path
+            strokeWidth="1.7"
+            d="M8 1.7v1.4M8 12.9v1.4M14.3 8h-1.4M3.1 8H1.7M12.45 3.55l-1 1M4.55 11.45l-1 1M12.45 12.45l-1-1M4.55 4.55l-1-1"
+          />
+        </svg>
       </button>
     </div>
   );

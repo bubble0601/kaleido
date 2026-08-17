@@ -5,11 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>kaleido</title>
     <script>
-      // FOUC 防止: React 起動前にテーマクラスを適用する
-      const theme = localStorage.getItem('kaleido-theme');
-      if (theme === 'dark' || (!theme && matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.documentElement.classList.add('dark');
-      }
+      // FOUC 防止: React 起動前にテーマクラスを適用する。
+      // 未設定と 'system' はどちらも OS の設定に従う
+      const pref = localStorage.getItem('kaleido-theme');
+      const isDark =
+        pref === 'dark' ||
+        (pref !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (isDark) document.documentElement.classList.add('dark');
     </script>
   </head>
   <body>

@@ -9,7 +9,10 @@ export interface RevealTarget {
 }
 
 export type ViewMode = 'split' | 'inline' | 'file';
+/** 実際に適用される配色 */
 export type Theme = 'light' | 'dark';
+/** 設定として保持する配色。system は OS の設定に追従する */
+export type ThemePreference = 'system' | 'light' | 'dark';
 /** サイドバーの表示内容: 比較対象のファイル / ルート配下の全ファイル / 読み物 (md・html) */
 export type SidebarTab = 'changes' | 'files' | 'docs';
 /** プレビュー可能なファイルの見せ方 */
@@ -17,10 +20,17 @@ export type PreviewMode = 'source' | 'split' | 'preview';
 
 const THEME_STORAGE_KEY = 'kaleido-theme';
 
-function getInitialTheme(): Theme {
+export const SYSTEM_DARK_QUERY = '(prefers-color-scheme: dark)';
+
+function getInitialThemePreference(): ThemePreference {
   const stored = localStorage.getItem(THEME_STORAGE_KEY);
-  if (stored === 'light' || stored === 'dark') return stored;
-  return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  if (stored === 'light' || stored === 'dark' || stored === 'system') return stored;
+  return 'system';
+}
+
+export function resolveTheme(preference: ThemePreference): Theme {
+  if (preference !== 'system') return preference;
+  return matchMedia(SYSTEM_DARK_QUERY).matches ? 'dark' : 'light';
 }
 
 interface UiState {
@@ -36,7 +46,11 @@ interface UiState {
   openedFrom: SidebarTab | null;
   /** null のときは開いた経路に応じた既定を使う (ファイルを切り替えると null に戻る) */
   previewMode: PreviewMode | null;
+  /** 設定として保持している値 */
+  themePreference: ThemePreference;
+  /** 実際に適用する配色 (system のときは OS の設定から解決したもの) */
   theme: Theme;
+  isSettingsOpen: boolean;
   setRange: (range: RangeSpec) => void;
   setSidebarTab: (tab: SidebarTab) => void;
   setOpenedFrom: (tab: SidebarTab | null) => void;
@@ -45,10 +59,15 @@ interface UiState {
   setBrowsePath: (path: string | null) => void;
   setPendingReveal: (target: RevealTarget | null) => void;
   setViewMode: (mode: ViewMode) => void;
-  setTheme: (theme: Theme) => void;
+  setThemePreference: (preference: ThemePreference) => void;
+  /** OS 側の配色が変わったときに呼ぶ (system のときだけ効く) */
+  syncSystemTheme: () => void;
+  setSettingsOpen: (isOpen: boolean) => void;
 }
 
-export const useUiStore = create<UiState>((set) => ({
+const initialThemePreference = getInitialThemePreference();
+
+export const useUiStore = create<UiState>((set, get) => ({
   range: null,
   selectedPath: null,
   browsePath: null,
@@ -57,7 +76,9 @@ export const useUiStore = create<UiState>((set) => ({
   sidebarTab: 'changes',
   openedFrom: null,
   previewMode: null,
-  theme: getInitialTheme(),
+  themePreference: initialThemePreference,
+  theme: resolveTheme(initialThemePreference),
+  isSettingsOpen: false,
   setRange: (range) => set({ range, selectedPath: null, browsePath: null }),
   setSidebarTab: (sidebarTab) => set({ sidebarTab }),
   setOpenedFrom: (openedFrom) => set({ openedFrom }),
@@ -66,8 +87,13 @@ export const useUiStore = create<UiState>((set) => ({
   setBrowsePath: (browsePath) => set({ browsePath }),
   setPendingReveal: (pendingReveal) => set({ pendingReveal }),
   setViewMode: (viewMode) => set({ viewMode }),
-  setTheme: (theme) => {
-    localStorage.setItem(THEME_STORAGE_KEY, theme);
-    set({ theme });
+  setThemePreference: (themePreference) => {
+    localStorage.setItem(THEME_STORAGE_KEY, themePreference);
+    set({ themePreference, theme: resolveTheme(themePreference) });
   },
+  syncSystemTheme: () => {
+    if (get().themePreference !== 'system') return;
+    set({ theme: resolveTheme('system') });
+  },
+  setSettingsOpen: (isSettingsOpen) => set({ isSettingsOpen }),
 }));

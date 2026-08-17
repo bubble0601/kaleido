@@ -34,7 +34,8 @@
   },
   "scripts": {
     "dev": "node scripts/dev.js",
-    "build": "pnpm run build:server && pnpm run build:client",
+    "build": "pnpm run build:licenses && pnpm run build:server && pnpm run build:client",
+    "build:licenses": "node scripts/extract-licenses.mjs",
     "build:server": "tsup",
     "build:client": "vite build",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.client.json",
@@ -75,6 +76,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.0.5",
+    "license-checker-rseidelsohn": "^5.0.1",
     "tailwindcss": "^4.3.3",
     "tsup": "^8.5.1",
     "tsx": "^4.23.10",

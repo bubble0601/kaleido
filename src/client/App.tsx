@@ -24,7 +24,8 @@ import { monaco } from './monaco/setup';
 import { MarkdownPreview } from './components/MarkdownPreview';
 import { contentVersion, HtmlPreview } from './components/HtmlPreview';
 import { getPreviewKind } from './utils/preview';
-import { useUiStore, type PreviewMode, type SidebarTab } from './state/store';
+import { SettingsDialog } from './components/SettingsDialog';
+import { SYSTEM_DARK_QUERY, useUiStore, type PreviewMode, type SidebarTab } from './state/store';
 import { setFileOpenHandler } from './monaco/navigation';
 
 type ICodeEditor = import('monaco-editor/editor/editor.api.js').editor.ICodeEditor;
@@ -91,6 +92,14 @@ export function App() {
     document.documentElement.classList.toggle('dark', theme === 'dark');
     monaco.editor.setTheme(theme === 'dark' ? 'vs-dark' : 'vs');
   }, [theme]);
+
+  // 設定が system のときは OS 側の切り替えに追従する
+  const syncSystemTheme = useUiStore((state) => state.syncSystemTheme);
+  useEffect(() => {
+    const media = matchMedia(SYSTEM_DARK_QUERY);
+    media.addEventListener('change', syncSystemTheme);
+    return () => media.removeEventListener('change', syncSystemTheme);
+  }, [syncSystemTheme]);
 
   useEffect(() => {
     if (meta.data && !range) {
@@ -452,6 +461,7 @@ export function App() {
         onClose={() => setIsQuickOpenVisible(false)}
         onSelect={openFile}
       />
+      <SettingsDialog />
       {clearSnackbar && (
         <div className="fixed bottom-5 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-lg bg-neutral-800 px-4 py-2.5 text-sm text-neutral-100 shadow-2xl dark:bg-neutral-700">
           <span>
