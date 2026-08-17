@@ -50,7 +50,7 @@ kaleido comments --json            # JSON で出力
 引数なしで git 管理下にいる場合の自動判定: staged 変更あり→staged / working 変更あり→全 uncommitted / どちらもなし→直近コミット。
 
 サーバー終了時 (Ctrl-C / 全タブクローズでの自動終了) にも、その範囲のコメントをターミナルに出力する。
-比較範囲と表示中ファイルは URL クエリ (`?target=&base=&path=`) に同期されるため、リロード・共有できる。
+比較範囲・表示中ファイル・サイドバーの表示内容は URL クエリ (`?target=&base=&path=&tab=`) に同期されるため、リロード・共有できる。
 
 オプション:
 

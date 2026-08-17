@@ -30,7 +30,7 @@ import { SYSTEM_DARK_QUERY, useUiStore, type PreviewMode, type SidebarTab } from
 import { setFileOpenHandler } from './monaco/navigation';
 
 type ICodeEditor = import('monaco-editor/editor/editor.api.js').editor.ICodeEditor;
-import { getInitialUrlPath, getInitialUrlRange, syncUrl } from './utils/urlState';
+import { getInitialUrlPath, getInitialUrlRange, getInitialUrlTab, syncUrl } from './utils/urlState';
 
 const PREVIEW_MODES: { mode: PreviewMode; label: string; icon: React.ReactNode }[] = [
   {
@@ -109,6 +109,24 @@ export function App() {
   }, [meta.data, range, setRange]);
 
   const isGitRepo = meta.data?.isGitRepo ?? false;
+
+  // Activity Bar の選択。非 git では Changes を出さないので files に寄せる
+  const storedSidebarTab = useUiStore((state) => state.sidebarTab);
+  const setStoredSidebarTab = useUiStore((state) => state.setSidebarTab);
+  const sidebarTab: SidebarTab =
+    !isGitRepo && storedSidebarTab === 'changes' ? 'files' : storedSidebarTab;
+
+  // リロード時に開いていたタブへ戻す。プレビューの既定も揃うよう openedFrom も復元する
+  const hasRestoredUrlTabRef = useRef(false);
+  useEffect(() => {
+    if (hasRestoredUrlTabRef.current) return;
+    hasRestoredUrlTabRef.current = true;
+    const tab = getInitialUrlTab();
+    if (tab !== 'changes' && tab !== 'files' && tab !== 'docs') return;
+    setStoredSidebarTab(tab);
+    setOpenedFrom(tab);
+  }, [setStoredSidebarTab, setOpenedFrom]);
+
   const diff = useDiff(range);
   const files = useMemo(() => diff.data?.files ?? [], [diff.data]);
 
@@ -167,10 +185,10 @@ export function App() {
     return () => setFileOpenHandler(null);
   }, [openFile, setPendingReveal]);
 
-  // 範囲・表示中ファイルを URL に反映 (リロード・共有用)
+  // 範囲・表示中ファイル・サイドバーの表示内容を URL に反映 (リロード・共有用)
   useEffect(() => {
-    syncUrl(range, browsePath ?? selectedPath);
-  }, [range, selectedPath, browsePath]);
+    syncUrl(range, browsePath ?? selectedPath, sidebarTab);
+  }, [range, selectedPath, browsePath, sidebarTab]);
 
   const [isFileCommentOpen, setIsFileCommentOpen] = useState(false);
   useEffect(() => setIsFileCommentOpen(false), [selectedPath, range]);
@@ -298,12 +316,7 @@ export function App() {
 
   const sidebar = useSidebarResize();
 
-  // Activity Bar の選択。非 git では Changes を出さないので files に寄せる。
   // 選択中のものをもう一度押したらサイドバーを畳む (VS Code と同じ)
-  const storedSidebarTab = useUiStore((state) => state.sidebarTab);
-  const setStoredSidebarTab = useUiStore((state) => state.setSidebarTab);
-  const sidebarTab: SidebarTab =
-    !isGitRepo && storedSidebarTab === 'changes' ? 'files' : storedSidebarTab;
   const selectSidebarTab = useCallback(
     (next: SidebarTab) => {
       if (next === sidebarTab && !sidebar.isCollapsed) {

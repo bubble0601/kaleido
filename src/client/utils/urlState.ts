@@ -20,13 +20,22 @@ export function getInitialUrlPath(): string | null {
   return initialParams.get('path');
 }
 
-export function syncUrl(range: RangeSpec | null, path: string | null): void {
+/**
+ * ページロード時の URL クエリから復元したサイドバーの表示内容。
+ * 値の妥当性は呼び出し側で判定する (store への依存を作らないため)
+ */
+export function getInitialUrlTab(): string | null {
+  return initialParams.get('tab');
+}
+
+export function syncUrl(range: RangeSpec | null, path: string | null, tab: string): void {
   if (!range) return;
   const params = new URLSearchParams();
   params.set('target', range.target);
   params.set('base', range.base);
   if (range.baseMode === 'merge-base') params.set('baseMode', 'merge-base');
   if (path) params.set('path', path);
+  params.set('tab', tab);
   const next = `${location.pathname}?${params}`;
   if (next !== `${location.pathname}${location.search}`) {
     history.replaceState(null, '', next);
