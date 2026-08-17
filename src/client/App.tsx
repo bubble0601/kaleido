@@ -24,6 +24,7 @@ import { monaco } from './monaco/setup';
 import { MarkdownPreview } from './components/MarkdownPreview';
 import { contentVersion, HtmlPreview } from './components/HtmlPreview';
 import { getPreviewKind } from './utils/preview';
+import { CopyButton } from './components/CopyButton';
 import { SettingsDialog } from './components/SettingsDialog';
 import { SYSTEM_DARK_QUERY, useUiStore, type PreviewMode, type SidebarTab } from './state/store';
 import { setFileOpenHandler } from './monaco/navigation';
@@ -523,6 +524,7 @@ export function App() {
               <span className="truncate font-mono text-neutral-600 dark:text-neutral-300" title={selectedFile.path}>
                 {selectedFile.path}
               </span>
+              <CopyButton text={basename(selectedFile.path)} title="Copy file name" />
               {isDirty && (
                 <span className="shrink-0 text-yellow-500" title="Unsaved changes">
                   ●
@@ -676,6 +678,10 @@ export function App() {
       </div>
     </div>
   );
+}
+
+function basename(path: string): string {
+  return path.slice(path.lastIndexOf('/') + 1);
 }
 
 function Centered({ children }: { children: React.ReactNode }) {
