@@ -1,10 +1,35 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import type { DiffFileMeta, RangeSpec } from '../../shared/types';
-import { useAllFiles, useDocFiles } from '../hooks/queries';
+import { useAllFiles, useDocFiles, useMeta } from '../hooks/queries';
 import { useUiStore, type DocsSort, type SidebarTab } from '../state/store';
+import { DocsRootSelector, type DocsRootOption } from './DocsRootSelector';
 import { FileTree, useTreeFolding, type FileTreeEntry, type TreeFolding } from './FileTree';
 import { RangeSelector } from './RangeSelector';
+
+function docsRootKey(repoId: string): string {
+  return `kaleido-docs-root:${repoId}`;
+}
+
+/** 読み物を含むディレクトリを、配下の件数付きで集める */
+function collectDocsRoots(docs: { path: string }[]): DocsRootOption[] {
+  const counts = new Map<string, number>();
+  for (const doc of docs) {
+    const segments = doc.path.split('/');
+    segments.pop();
+    for (let i = 1; i <= segments.length; i++) {
+      const dir = segments.slice(0, i).join('/');
+      counts.set(dir, (counts.get(dir) ?? 0) + 1);
+    }
+  }
+  // よく使うものが上に来るよう件数の多い順。ルート全体は常に先頭
+  return [
+    { path: '', count: docs.length },
+    ...[...counts.entries()]
+      .map(([path, count]) => ({ path, count }))
+      .sort((a, b) => b.count - a.count || a.path.localeCompare(b.path)),
+  ];
+}
 
 const SECTION_LABELS: Record<SidebarTab, string> = {
   changes: 'Changes',
@@ -51,13 +76,54 @@ export function Sidebar({
     () => (allFiles.data?.paths ?? []).map((path) => ({ path })),
     [allFiles.data],
   );
-  const docEntries = useMemo<FileTreeEntry[]>(() => docFiles.data?.files ?? [], [docFiles.data]);
+  const allDocs = useMemo(() => docFiles.data?.files ?? [], [docFiles.data]);
+
+  // Docs の基点ディレクトリ。プロジェクトごとに覚える
+  const meta = useMeta();
+  const repoId = meta.data?.repoId;
+  const docsRoot = useUiStore((state) => state.docsRoot);
+  const setDocsRoot = useUiStore((state) => state.setDocsRoot);
+  const rootOptions = useMemo(() => collectDocsRoots(allDocs), [allDocs]);
+  useEffect(() => {
+    if (!repoId) return;
+    const stored = localStorage.getItem(docsRootKey(repoId)) ?? '';
+    setDocsRoot(stored);
+  }, [repoId, setDocsRoot]);
+  // 保存されていた基点が今は存在しない場合はルート全体に戻す
+  const effectiveRoot =
+    docsRoot && rootOptions.some((option) => option.path === docsRoot) ? docsRoot : '';
+  const changeDocsRoot = (root: string) => {
+    if (repoId) localStorage.setItem(docsRootKey(repoId), root);
+    setDocsRoot(root);
+  };
+
+  // 基点より下だけを、基点からの相対パスで見せる
+  const prefix = effectiveRoot ? `${effectiveRoot}/` : '';
+  const docEntries = useMemo<FileTreeEntry[]>(
+    () =>
+      allDocs
+        .filter((entry) => entry.path.startsWith(prefix))
+        .map((entry) => ({ ...entry, path: entry.path.slice(prefix.length) })),
+    [allDocs, prefix],
+  );
+
+  // ツリー側は相対パスになるので、コメント数のキーも合わせる
+  const docCommentCounts = useMemo(() => {
+    if (!prefix) return commentCounts;
+    const counts = new Map<string, number>();
+    for (const [path, count] of commentCounts) {
+      if (path.startsWith(prefix)) counts.set(path.slice(prefix.length), count);
+    }
+    return counts;
+  }, [commentCounts, prefix]);
 
   // 比較対象は数が知れているので開いた状態、全ファイルと読み物は畳んだ状態から始める
   const activePath = browsePath ?? selectedPath;
+  const activeDocPath =
+    activePath && activePath.startsWith(prefix) ? activePath.slice(prefix.length) : null;
   const changesFolding = useTreeFolding(true, browsePath ? null : selectedPath);
   const filesFolding = useTreeFolding(false, activePath);
-  const docsFolding = useTreeFolding(false, activePath);
+  const docsFolding = useTreeFolding(false, activeDocPath);
   const folding =
     tab === 'changes' ? changesFolding : tab === 'docs' ? docsFolding : filesFolding;
 
@@ -76,10 +142,15 @@ export function Sidebar({
         <FoldAllButton folding={folding} />
       </div>
 
-      {/* 比較範囲は Changes だけのものなので、ここに置く (ツリーの外＝クリップされない位置) */}
+      {/* セレクタはツリーの外に置く (中に入れるとドロップダウンがクリップされる) */}
       {tab === 'changes' && (
         <div className="shrink-0 px-2 pb-2">
           <RangeSelector current={range} onChange={onRangeChange} />
+        </div>
+      )}
+      {tab === 'docs' && rootOptions.length > 1 && (
+        <div className="shrink-0 px-2 pb-2">
+          <DocsRootSelector current={effectiveRoot} options={rootOptions} onChange={changeDocsRoot} />
         </div>
       )}
 
@@ -107,9 +178,9 @@ export function Sidebar({
             <FileTree
               files={docEntries}
               folding={folding}
-              selectedPath={activePath}
-              commentCounts={commentCounts}
-              onSelect={(path) => onOpenFile(path, tab)}
+              selectedPath={activeDocPath}
+              commentCounts={docCommentCounts}
+              onSelect={(path) => onOpenFile(`${prefix}${path}`, tab)}
               sort={docsSort}
             />
           )

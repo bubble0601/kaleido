@@ -56,6 +56,8 @@ interface UiState {
   previewMode: PreviewMode | null;
   /** Docs の並び順 (既定は更新日時の新しい順) */
   docsSort: DocsSort;
+  /** Docs で基点にするディレクトリ (ルート相対。空文字はルート全体) */
+  docsRoot: string;
   /** 設定として保持している値 */
   themePreference: ThemePreference;
   /** 実際に適用する配色 (system のときは OS の設定から解決したもの) */
@@ -66,6 +68,7 @@ interface UiState {
   setOpenedFrom: (tab: SidebarTab | null) => void;
   setPreviewMode: (mode: PreviewMode | null) => void;
   setDocsSort: (sort: DocsSort) => void;
+  setDocsRoot: (root: string) => void;
   setSelectedPath: (path: string | null) => void;
   setBrowsePath: (path: string | null) => void;
   setPendingReveal: (target: RevealTarget | null) => void;
@@ -88,6 +91,7 @@ export const useUiStore = create<UiState>((set, get) => ({
   openedFrom: null,
   previewMode: null,
   docsSort: getInitialDocsSort(),
+  docsRoot: '',
   themePreference: initialThemePreference,
   theme: resolveTheme(initialThemePreference),
   isSettingsOpen: false,
@@ -99,6 +103,8 @@ export const useUiStore = create<UiState>((set, get) => ({
     localStorage.setItem(DOCS_SORT_STORAGE_KEY, docsSort);
     set({ docsSort });
   },
+  // 保存はプロジェクト (repoId) ごとなので、呼ぶ側で localStorage を扱う
+  setDocsRoot: (docsRoot) => set({ docsRoot }),
   setSelectedPath: (selectedPath) => set({ selectedPath, browsePath: null }),
   setBrowsePath: (browsePath) => set({ browsePath }),
   setPendingReveal: (pendingReveal) => set({ pendingReveal }),

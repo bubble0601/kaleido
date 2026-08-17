@@ -79,26 +79,26 @@ function buildTree<T extends FileTreeEntry>(files: T[], sort: TreeSort): TreeNod
       })
       .map((n) => (n.kind === 'dir' ? { ...n, children: sortNodes(n.children) } : n));
 
-  // 更新日時順。ディレクトリは配下で最も新しいファイルの日時で並べる
-  const sortByMtime = (nodes: TreeNode<T>[]): { nodes: TreeNode<T>[]; mtime: number } => {
-    const scored = nodes.map((node) => {
-      if (node.kind === 'file') return { node, mtime: node.file.mtime ?? 0 };
-      const child = sortByMtime(node.children);
-      return { node: { ...node, children: child.nodes }, mtime: child.mtime };
-    });
-    scored.sort((a, b) => {
-      if (a.node.kind !== b.node.kind) return a.node.kind === 'dir' ? -1 : 1;
-      if (a.mtime !== b.mtime) return b.mtime - a.mtime;
-      return a.node.name.localeCompare(b.node.name);
-    });
-    return {
-      nodes: scored.map((entry) => entry.node),
-      mtime: scored.reduce((max, entry) => Math.max(max, entry.mtime), 0),
-    };
-  };
+  /** ディレクトリは配下で最も新しいファイルの日時を代表値にする */
+  const latestMtime = (node: TreeNode<T>): number =>
+    node.kind === 'file'
+      ? (node.file.mtime ?? 0)
+      : node.children.reduce((max, child) => Math.max(max, latestMtime(child)), 0);
+
+  /*
+   * 更新日時順は表示中のディレクトリの直下にだけ効かせる。
+   * 深い階層まで日時で並ぶと、開くたびに順番が変わって探しにくいため。
+   */
+  const sortTopLevelByMtime = (nodes: TreeNode<T>[]): TreeNode<T>[] =>
+    [...nodes]
+      .map((node) => (node.kind === 'dir' ? { ...node, children: sortNodes(node.children) } : node))
+      .sort((a, b) => {
+        if (a.kind !== b.kind) return a.kind === 'dir' ? -1 : 1;
+        return latestMtime(b) - latestMtime(a) || a.name.localeCompare(b.name);
+      });
 
   const compacted = compact(root).children;
-  return sort === 'mtime' ? sortByMtime(compacted).nodes : sortNodes(compacted);
+  return sort === 'mtime' ? sortTopLevelByMtime(compacted) : sortNodes(compacted);
 }
 
 export interface TreeFolding {
