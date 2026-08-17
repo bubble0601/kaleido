@@ -89,7 +89,7 @@ function renderDocument(content: string, path: string, theme: Theme): PreviewDoc
 <main class="doc-content">${body}</main>
 ${tocHtml}
 </div>
-<script nonce="${nonce}">${COPY_SCRIPT}</script>
+<script nonce="${nonce}">${PREVIEW_SCRIPT}</script>
 </body>
 </html>`;
   return { html, diagrams };
@@ -296,7 +296,7 @@ function renderCodeBlock(text: string, lang: string, isEscaped: boolean): string
 }
 
 /** iframe に入れる唯一のスクリプト (CSP の nonce 付きでしか動かない) */
-const COPY_SCRIPT = `
+const PREVIEW_SCRIPT = `
 document.addEventListener('click', function (event) {
   var button = event.target.closest('.copy-button');
   if (!button) return;
@@ -323,6 +323,51 @@ document.addEventListener('click', function (event) {
     fallback();
   }
 });
+
+// スクロール位置に対応する見出しを目次で強調する
+(function () {
+  var toc = document.querySelector('.doc-toc');
+  if (!toc) return;
+  var entries = [];
+  var links = toc.querySelectorAll('a[href]');
+  for (var i = 0; i < links.length; i++) {
+    var hash = links[i].getAttribute('href').split('#')[1];
+    var heading = hash ? document.getElementById(decodeURIComponent(hash)) : null;
+    if (heading) entries.push({ link: links[i], heading: heading });
+  }
+  if (entries.length === 0) return;
+
+  var current = null;
+  var update = function () {
+    // 画面上端よりわずかに下を基準に、そこを最後に通り過ぎた見出しを現在地とする
+    var active = entries[0];
+    for (var i = 0; i < entries.length; i++) {
+      if (entries[i].heading.getBoundingClientRect().top > 96) break;
+      active = entries[i];
+    }
+    if (active === current) return;
+    if (current) current.link.removeAttribute('aria-current');
+    active.link.setAttribute('aria-current', 'true');
+    current = active;
+
+    // 目次自体が長いときは、強調中の項目が隠れないように寄せる
+    var tocBox = toc.getBoundingClientRect();
+    var linkBox = active.link.getBoundingClientRect();
+    if (linkBox.top < tocBox.top) toc.scrollTop -= tocBox.top - linkBox.top;
+    else if (linkBox.bottom > tocBox.bottom) toc.scrollTop += linkBox.bottom - tocBox.bottom;
+  };
+
+  var isScheduled = false;
+  window.addEventListener('scroll', function () {
+    if (isScheduled) return;
+    isScheduled = true;
+    requestAnimationFrame(function () {
+      isScheduled = false;
+      update();
+    });
+  }, { passive: true });
+  update();
+})();
 `;
 
 function escapeAttr(value: string): string {
@@ -433,6 +478,12 @@ body.markdown-body {
   opacity: 0.75;
 }
 .doc-toc a:hover { opacity: 1; }
+.doc-toc a[aria-current='true'] {
+  opacity: 1;
+  font-weight: 600;
+  background: rgba(128, 128, 128, 0.16);
+  border-radius: 4px;
+}
 
 /* 図とソースの切り替え (ラジオ + 兄弟セレクタ。スクリプト不要) */
 .mermaid-block { margin: 0 0 16px; }
