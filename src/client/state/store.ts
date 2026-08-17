@@ -17,6 +17,14 @@ export type ThemePreference = 'system' | 'light' | 'dark';
 export type SidebarTab = 'changes' | 'files' | 'docs';
 /** プレビュー可能なファイルの見せ方 */
 export type PreviewMode = 'source' | 'split' | 'preview';
+/** Docs の並び順 */
+export type DocsSort = 'mtime' | 'name';
+
+const DOCS_SORT_STORAGE_KEY = 'kaleido-docs-sort';
+
+function getInitialDocsSort(): DocsSort {
+  return localStorage.getItem(DOCS_SORT_STORAGE_KEY) === 'name' ? 'name' : 'mtime';
+}
 
 const THEME_STORAGE_KEY = 'kaleido-theme';
 
@@ -46,6 +54,8 @@ interface UiState {
   openedFrom: SidebarTab | null;
   /** null のときは開いた経路に応じた既定を使う (ファイルを切り替えると null に戻る) */
   previewMode: PreviewMode | null;
+  /** Docs の並び順 (既定は更新日時の新しい順) */
+  docsSort: DocsSort;
   /** 設定として保持している値 */
   themePreference: ThemePreference;
   /** 実際に適用する配色 (system のときは OS の設定から解決したもの) */
@@ -55,6 +65,7 @@ interface UiState {
   setSidebarTab: (tab: SidebarTab) => void;
   setOpenedFrom: (tab: SidebarTab | null) => void;
   setPreviewMode: (mode: PreviewMode | null) => void;
+  setDocsSort: (sort: DocsSort) => void;
   setSelectedPath: (path: string | null) => void;
   setBrowsePath: (path: string | null) => void;
   setPendingReveal: (target: RevealTarget | null) => void;
@@ -76,6 +87,7 @@ export const useUiStore = create<UiState>((set, get) => ({
   sidebarTab: 'changes',
   openedFrom: null,
   previewMode: null,
+  docsSort: getInitialDocsSort(),
   themePreference: initialThemePreference,
   theme: resolveTheme(initialThemePreference),
   isSettingsOpen: false,
@@ -83,6 +95,10 @@ export const useUiStore = create<UiState>((set, get) => ({
   setSidebarTab: (sidebarTab) => set({ sidebarTab }),
   setOpenedFrom: (openedFrom) => set({ openedFrom }),
   setPreviewMode: (previewMode) => set({ previewMode }),
+  setDocsSort: (docsSort) => {
+    localStorage.setItem(DOCS_SORT_STORAGE_KEY, docsSort);
+    set({ docsSort });
+  },
   setSelectedPath: (selectedPath) => set({ selectedPath, browsePath: null }),
   setBrowsePath: (browsePath) => set({ browsePath }),
   setPendingReveal: (pendingReveal) => set({ pendingReveal }),

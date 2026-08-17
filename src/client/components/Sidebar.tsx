@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 
 import type { DiffFileMeta, RangeSpec } from '../../shared/types';
 import { useAllFiles, useDocFiles } from '../hooks/queries';
-import type { SidebarTab } from '../state/store';
+import { useUiStore, type DocsSort, type SidebarTab } from '../state/store';
 import { FileTree, useTreeFolding, type FileTreeEntry, type TreeFolding } from './FileTree';
 import { RangeSelector } from './RangeSelector';
 
@@ -43,6 +43,8 @@ export function Sidebar({
   onOpenFile,
   onToggleViewed,
 }: SidebarProps) {
+  const docsSort = useUiStore((state) => state.docsSort);
+  const setDocsSort = useUiStore((state) => state.setDocsSort);
   const allFiles = useAllFiles(tab === 'files');
   const docFiles = useDocFiles(tab === 'docs');
   const fileEntries = useMemo<FileTreeEntry[]>(
@@ -70,6 +72,7 @@ export function Sidebar({
           </span>
         )}
         <div className="flex-1" />
+        {tab === 'docs' && <DocsSortButton sort={docsSort} onChange={setDocsSort} />}
         <FoldAllButton folding={folding} />
       </div>
 
@@ -107,7 +110,7 @@ export function Sidebar({
               selectedPath={activePath}
               commentCounts={commentCounts}
               onSelect={(path) => onOpenFile(path, tab)}
-              sort="mtime"
+              sort={docsSort}
             />
           )
         ) : allFiles.isLoading ? (
@@ -133,6 +136,40 @@ export function Sidebar({
         )}
       </div>
     </div>
+  );
+}
+
+/** 現在の並び順をアイコンで示し、押すともう一方へ切り替える */
+function DocsSortButton({
+  sort,
+  onChange,
+}: {
+  sort: DocsSort;
+  onChange: (sort: DocsSort) => void;
+}) {
+  const isByTime = sort === 'mtime';
+  return (
+    <button
+      type="button"
+      className="rounded p-1 text-neutral-500 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:bg-neutral-700"
+      title={isByTime ? 'Sorted by updated — switch to name' : 'Sorted by name — switch to updated'}
+      aria-label={isByTime ? 'Sort by name' : 'Sort by updated'}
+      onClick={() => onChange(isByTime ? 'name' : 'mtime')}
+    >
+      <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        {isByTime ? (
+          <>
+            <circle cx="8" cy="8" r="5.5" />
+            <path d="M8 4.8V8l2.4 1.5" />
+          </>
+        ) : (
+          <>
+            <path d="M2 3.5h9M2 8h6M2 12.5h3" />
+            <path d="M13 3.5v9M11 10.5l2 2 2-2" />
+          </>
+        )}
+      </svg>
+    </button>
   );
 }
 
