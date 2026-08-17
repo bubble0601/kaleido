@@ -1,5 +1,5 @@
 {
-  "name": "kaleido",
+  "name": "@bubble0601/kaleido",
   "version": "0.1.0",
   "description": "Monaco-based local web file viewer: browse any directory, diff git ranges, with real TypeScript hover, lint diagnostics, comments and review marks",
   "type": "module",
@@ -10,13 +10,36 @@
     "dist",
     "README.md"
   ],
+  "keywords": [
+    "viewer",
+    "diff",
+    "git",
+    "code-review",
+    "markdown",
+    "preview",
+    "mermaid",
+    "monaco",
+    "typescript",
+    "cli"
+  ],
+  "author": "bubble0601",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bubble0601/kaleido.git"
+  },
+  "homepage": "https://github.com/bubble0601/kaleido#readme",
+  "bugs": "https://github.com/bubble0601/kaleido/issues",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "dev": "node scripts/dev.js",
     "build": "pnpm run build:server && pnpm run build:client",
     "build:server": "tsup",
     "build:client": "vite build",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.client.json",
-    "start": "pnpm run build && node dist/cli/index.js"
+    "start": "pnpm run build && node dist/cli/index.js",
+    "prepublishOnly": "pnpm run typecheck && pnpm run build"
   },
   "engines": {
     "node": ">=20"
