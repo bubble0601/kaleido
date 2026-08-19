@@ -77,6 +77,7 @@ export function App() {
     previewMode,
     openedFrom,
     theme,
+    previewFontSize,
     setRange,
     setSelectedPath,
     setBrowsePath,
@@ -670,6 +671,7 @@ export function App() {
                     content={previewContent}
                     path={selectedFile.path}
                     theme={theme}
+                    fontSize={previewFontSize}
                   />
                 )}
               </div>

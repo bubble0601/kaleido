@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 
 import licenses from '../generated/licenses.json';
-import { useUiStore, type ThemePreference } from '../state/store';
+import {
+  EDITOR_FONT_SIZES,
+  PREVIEW_FONT_SIZES,
+  useUiStore,
+  type ThemePreference,
+} from '../state/store';
 
 type Section = 'appearance' | 'about';
 
@@ -94,15 +99,20 @@ export function SettingsDialog() {
 function AppearanceSection() {
   const themePreference = useUiStore((state) => state.themePreference);
   const setThemePreference = useUiStore((state) => state.setThemePreference);
+  const editorFontSize = useUiStore((state) => state.editorFontSize);
+  const setEditorFontSize = useUiStore((state) => state.setEditorFontSize);
+  const previewFontSize = useUiStore((state) => state.previewFontSize);
+  const setPreviewFontSize = useUiStore((state) => state.setPreviewFontSize);
   return (
-    <section>
-      <div className="flex items-center justify-between gap-4">
-        <label htmlFor="theme-select" className="text-sm font-medium">
-          Theme
-        </label>
+    <section className="flex flex-col gap-5">
+      <SettingRow
+        id="theme-select"
+        label="Theme"
+        note="System にすると OS の外観設定に追従します。"
+      >
         <select
           id="theme-select"
-          className="rounded border border-neutral-300 bg-white px-2 py-1 text-sm dark:border-neutral-700 dark:bg-neutral-800"
+          className={SELECT_CLASS}
           value={themePreference}
           onChange={(e) => setThemePreference(e.target.value as ThemePreference)}
         >
@@ -112,11 +122,88 @@ function AppearanceSection() {
             </option>
           ))}
         </select>
-      </div>
-      <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-        System にすると OS の外観設定に追従します。
-      </p>
+      </SettingRow>
+
+      <SettingRow
+        id="editor-font-size-select"
+        label="Editor font size"
+        note="diff・ファイル表示のエディタに適用されます。"
+      >
+        <FontSizeSelect
+          id="editor-font-size-select"
+          sizes={EDITOR_FONT_SIZES}
+          value={editorFontSize}
+          onChange={setEditorFontSize}
+        />
+      </SettingRow>
+
+      <SettingRow
+        id="preview-font-size-select"
+        label="Preview font size"
+        note="Markdown プレビュー本文の基準サイズ。見出しやコードはこれに比例します。"
+      >
+        <FontSizeSelect
+          id="preview-font-size-select"
+          sizes={PREVIEW_FONT_SIZES}
+          value={previewFontSize}
+          onChange={setPreviewFontSize}
+        />
+      </SettingRow>
     </section>
+  );
+}
+
+const SELECT_CLASS =
+  'rounded border border-neutral-300 bg-white px-2 py-1 text-sm dark:border-neutral-700 dark:bg-neutral-800';
+
+function SettingRow({
+  id,
+  label,
+  note,
+  children,
+}: {
+  id: string;
+  label: string;
+  note: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-4">
+        <label htmlFor={id} className="text-sm font-medium">
+          {label}
+        </label>
+        {children}
+      </div>
+      <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">{note}</p>
+    </div>
+  );
+}
+
+function FontSizeSelect({
+  id,
+  sizes,
+  value,
+  onChange,
+}: {
+  id: string;
+  sizes: number[];
+  value: number;
+  onChange: (size: number) => void;
+}) {
+  return (
+    <select
+      id={id}
+      className={SELECT_CLASS}
+      value={value}
+      onChange={(e) => onChange(Number(e.target.value))}
+    >
+      {sizes.map((size) => (
+        <option key={size} value={size}>
+          {size} px
+        </option>
+      ))}
+    </select>
   );
 }
 

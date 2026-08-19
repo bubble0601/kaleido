@@ -12,6 +12,8 @@ interface MarkdownPreviewProps {
   /** ルート相対のファイルパス。相対リンク・相対画像の基準になる */
   path: string;
   theme: Theme;
+  /** 本文の文字サイズ (px)。見出しなどは em 指定なので、これに比例して変わる */
+  fontSize: number;
 }
 
 /**
@@ -29,8 +31,11 @@ interface MarkdownPreviewProps {
  * 通信も塞いでいる。allow-same-origin は付けないので、仮に何か動いても
  * アプリのオリジンや API には触れない。
  */
-export function MarkdownPreview({ content, path, theme }: MarkdownPreviewProps) {
-  const doc = useMemo(() => renderDocument(content, path, theme), [content, path, theme]);
+export function MarkdownPreview({ content, path, theme, fontSize }: MarkdownPreviewProps) {
+  const doc = useMemo(
+    () => renderDocument(content, path, theme, fontSize),
+    [content, path, theme, fontSize],
+  );
   const svgByKey = useMermaidDiagrams(doc.diagrams, theme);
   const html = useMemo(() => fillDiagrams(doc, svgByKey, theme), [doc, svgByKey, theme]);
   return (
@@ -67,7 +72,12 @@ interface PreviewDocument {
 /** 目次に載せる見出しの深さ。h4 以下は細かすぎるので載せない */
 const MAX_TOC_DEPTH = 3;
 
-function renderDocument(content: string, path: string, theme: Theme): PreviewDocument {
+function renderDocument(
+  content: string,
+  path: string,
+  theme: Theme,
+  fontSize: number,
+): PreviewDocument {
   const toc: TocEntry[] = [];
   const diagrams: MermaidBlock[] = [];
   const body = createMarked(path, toc, diagrams).parse(content, { async: false });
@@ -82,7 +92,8 @@ function renderDocument(content: string, path: string, theme: Theme): PreviewDoc
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src * data:; style-src 'unsafe-inline'; font-src data:; script-src 'nonce-${nonce}'; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<style>@layer github { ${themeCss} } ${LAYOUT_CSS}</style>
+<style>@layer github { ${themeCss} } ${LAYOUT_CSS}
+body.markdown-body { font-size: ${fontSize}px; }</style>
 </head>
 <body class="markdown-body">
 <div class="doc-shell${tocHtml ? ' has-toc' : ''}">

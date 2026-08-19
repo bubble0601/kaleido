@@ -26,6 +26,22 @@ function getInitialDocsSort(): DocsSort {
   return localStorage.getItem(DOCS_SORT_STORAGE_KEY) === 'name' ? 'name' : 'mtime';
 }
 
+const EDITOR_FONT_SIZE_STORAGE_KEY = 'kaleido-editor-font-size';
+const PREVIEW_FONT_SIZE_STORAGE_KEY = 'kaleido-preview-font-size';
+
+/** エディタの既定の文字サイズ (px) */
+export const DEFAULT_EDITOR_FONT_SIZE = 13;
+/** Markdown プレビュー本文の既定の文字サイズ (px。github-markdown-css の既定 16px は大きいので詰めている) */
+export const DEFAULT_PREVIEW_FONT_SIZE = 14;
+/** 設定で選べる文字サイズ。ここに無い値は保存されていても既定に戻す */
+export const EDITOR_FONT_SIZES = [10, 11, 12, 13, 14, 15, 16, 18, 20];
+export const PREVIEW_FONT_SIZES = [12, 13, 14, 15, 16, 17, 18, 20, 22];
+
+function getInitialFontSize(key: string, sizes: number[], fallback: number): number {
+  const stored = Number(localStorage.getItem(key));
+  return sizes.includes(stored) ? stored : fallback;
+}
+
 const THEME_STORAGE_KEY = 'kaleido-theme';
 
 export const SYSTEM_DARK_QUERY = '(prefers-color-scheme: dark)';
@@ -58,6 +74,10 @@ interface UiState {
   docsSort: DocsSort;
   /** Docs で基点にするディレクトリ (ルート相対。空文字はルート全体) */
   docsRoot: string;
+  /** エディタ (diff / 単体表示) の文字サイズ (px) */
+  editorFontSize: number;
+  /** Markdown プレビュー本文の文字サイズ (px) */
+  previewFontSize: number;
   /** 設定として保持している値 */
   themePreference: ThemePreference;
   /** 実際に適用する配色 (system のときは OS の設定から解決したもの) */
@@ -73,6 +93,8 @@ interface UiState {
   setBrowsePath: (path: string | null) => void;
   setPendingReveal: (target: RevealTarget | null) => void;
   setViewMode: (mode: ViewMode) => void;
+  setEditorFontSize: (size: number) => void;
+  setPreviewFontSize: (size: number) => void;
   setThemePreference: (preference: ThemePreference) => void;
   /** OS 側の配色が変わったときに呼ぶ (system のときだけ効く) */
   syncSystemTheme: () => void;
@@ -92,6 +114,16 @@ export const useUiStore = create<UiState>((set, get) => ({
   previewMode: null,
   docsSort: getInitialDocsSort(),
   docsRoot: '',
+  editorFontSize: getInitialFontSize(
+    EDITOR_FONT_SIZE_STORAGE_KEY,
+    EDITOR_FONT_SIZES,
+    DEFAULT_EDITOR_FONT_SIZE,
+  ),
+  previewFontSize: getInitialFontSize(
+    PREVIEW_FONT_SIZE_STORAGE_KEY,
+    PREVIEW_FONT_SIZES,
+    DEFAULT_PREVIEW_FONT_SIZE,
+  ),
   themePreference: initialThemePreference,
   theme: resolveTheme(initialThemePreference),
   isSettingsOpen: false,
@@ -109,6 +141,14 @@ export const useUiStore = create<UiState>((set, get) => ({
   setBrowsePath: (browsePath) => set({ browsePath }),
   setPendingReveal: (pendingReveal) => set({ pendingReveal }),
   setViewMode: (viewMode) => set({ viewMode }),
+  setEditorFontSize: (editorFontSize) => {
+    localStorage.setItem(EDITOR_FONT_SIZE_STORAGE_KEY, String(editorFontSize));
+    set({ editorFontSize });
+  },
+  setPreviewFontSize: (previewFontSize) => {
+    localStorage.setItem(PREVIEW_FONT_SIZE_STORAGE_KEY, String(previewFontSize));
+    set({ previewFontSize });
+  },
   setThemePreference: (themePreference) => {
     localStorage.setItem(THEME_STORAGE_KEY, themePreference);
     set({ themePreference, theme: resolveTheme(themePreference) });

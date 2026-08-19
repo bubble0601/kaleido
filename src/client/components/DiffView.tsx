@@ -12,7 +12,12 @@ import {
 import { setDiagnosticMarkers } from '../monaco/markers';
 import { getOrCreateModel, repoPathFromUri, setModelDirtyState } from '../monaco/models';
 import { monaco } from '../monaco/setup';
-import { useUiStore, type RevealTarget, type ViewMode } from '../state/store';
+import {
+  DEFAULT_EDITOR_FONT_SIZE,
+  useUiStore,
+  type RevealTarget,
+  type ViewMode,
+} from '../state/store';
 import { anchorComment } from '../utils/commentAnchor';
 import { EditorZones, type ZoneItem } from './comments/EditorZones';
 import { CommentCard, CommentForm } from './comments/CommentWidgets';
@@ -27,7 +32,7 @@ const COMMON_OPTIONS = {
   automaticLayout: true,
   minimap: { enabled: false },
   scrollBeyondLastLine: false,
-  fontSize: 13,
+  fontSize: DEFAULT_EDITOR_FONT_SIZE,
   renderWhitespace: 'selection',
   fixedOverflowWidgets: true,
   glyphMargin: true,
@@ -146,6 +151,7 @@ export function DiffView({
   const [modifiedEditor, setModifiedEditor] = useState<ICodeEditor | null>(null);
   const [originalEditor, setOriginalEditor] = useState<ICodeEditor | null>(null);
   const [fileEditor, setFileEditor] = useState<ICodeEditor | null>(null);
+  const editorFontSize = useUiStore((state) => state.editorFontSize);
   const [draft, setDraft] = useState<Draft | null>(null);
   const isDiffMode = viewMode !== 'file';
   /** file モードで表示している側 (deleted ファイルは original) */
@@ -190,6 +196,12 @@ export function DiffView({
   useEffect(() => {
     diffEditorRef.current?.updateOptions({ renderSideBySide: viewMode === 'split' });
   }, [viewMode]);
+
+  // 設定の文字サイズを反映する (エディタ生成直後にも走るよう、生成結果を依存に入れている)
+  useEffect(() => {
+    diffEditorRef.current?.updateOptions({ fontSize: editorFontSize });
+    codeEditorRef.current?.updateOptions({ fontSize: editorFontSize });
+  }, [editorFontSize, modifiedEditor, fileEditor]);
 
   // DiffEditor は folding 非対応のため、fold 対象は file モードのエディタのみ
   useEffect(() => {
