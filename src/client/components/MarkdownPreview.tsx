@@ -324,6 +324,28 @@ document.addEventListener('click', function (event) {
   }
 });
 
+// 狭いとき、右端にカーソルを寄せている間だけ目次を重ねて出す。
+// CSS の :hover だけだとスクロールバーの上に乗った瞬間に外れて閉じてしまう
+// (スクロールバーは html の箱の外) ため、ポインタの位置を見て開閉も持たせる。
+// スクロールバーの上では mousemove が来ないので、そのまま開いた状態が続く。
+(function () {
+  var toc = document.querySelector('.doc-toc');
+  if (!toc) return;
+  var narrow = matchMedia('(max-width: 899px)');
+  var EDGE = 24;
+  document.addEventListener('mousemove', function (event) {
+    if (!narrow.matches) return;
+    var width = document.documentElement.clientWidth;
+    if (event.clientX >= width - EDGE) toc.classList.add('is-open');
+    else if (event.clientX < width - toc.offsetWidth) toc.classList.remove('is-open');
+  }, { passive: true });
+  document.documentElement.addEventListener('mouseleave', function (event) {
+    // 右端 (スクロールバー側) へ抜けたときは開いたままにする
+    if (event.clientX >= document.documentElement.clientWidth - 2) return;
+    toc.classList.remove('is-open');
+  });
+})();
+
 // スクロール位置に対応する見出しを目次で強調する
 (function () {
   var toc = document.querySelector('.doc-toc');
@@ -442,26 +464,77 @@ body.markdown-body {
   max-width: 1280px;
   margin: 0 auto;
   padding: 32px 24px 64px;
+  /* 目次をオーバーレイにしたときの背景色を body から引き継ぐための中継 */
+  background-color: inherit;
 }
 .doc-content { min-width: 0; }
 .doc-content > *:first-child { margin-top: 0; }
 
-/* 目次は幅に余裕があるときだけ横に出す (狭いときは本文を優先して隠す) */
-.doc-toc { display: none; }
+/*
+ * 目次は幅に余裕があるときは本文の右に並べ、狭いときは画面右端から
+ * 引き出すオーバーレイにする (本文の幅を削らずに済むため)。
+ */
+.doc-toc {
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-y: auto;
+}
 @media (min-width: 900px) {
   .doc-shell.has-toc { grid-template-columns: minmax(0, 1fr) 220px; }
   .doc-toc {
-    display: block;
     position: sticky;
     top: 32px;
     align-self: start;
     max-height: calc(100vh - 64px);
-    overflow-y: auto;
     padding-left: 14px;
     border-left: 1px solid rgba(128, 128, 128, 0.35);
-    font-size: 13px;
-    line-height: 1.6;
   }
+}
+/* 狭いとき: 普段は画面外に逃がし、右端にカーソルを寄せている間だけ重ねて出す */
+@media (max-width: 899px) {
+  .doc-toc {
+    position: fixed;
+    inset: 0 0 0 auto;
+    z-index: 10;
+    box-sizing: border-box;
+    width: min(260px, 72vw);
+    padding: 24px 16px;
+    /* .doc-shell 経由で body の地色を受け取る (テーマごとに書き分けずに済む) */
+    background-color: inherit;
+    border-left: 1px solid rgba(128, 128, 128, 0.35);
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.18);
+    transform: translateX(100%);
+    transition: transform 0.18s ease;
+  }
+  .doc-toc:hover,
+  .doc-toc:focus-within,
+  .doc-toc.is-open { transform: translateX(0); }
+  /* 画面外にいる状態でも掴めるよう、右端の 24px を当たり判定として持たせる */
+  .doc-toc::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -24px;
+    width: 24px;
+  }
+  /* そこに目次があると分かるためのつまみ (開いている間は消す) */
+  .doc-toc::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -7px;
+    width: 4px;
+    height: 56px;
+    margin-top: -28px;
+    border-radius: 2px;
+    background: currentColor;
+    opacity: 0.3;
+    transition: opacity 0.18s ease;
+  }
+  .doc-toc:hover::after,
+  .doc-toc:focus-within::after,
+  .doc-toc.is-open::after { opacity: 0; }
 }
 .doc-toc-title {
   margin-bottom: 6px;
