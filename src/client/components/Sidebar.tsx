@@ -154,7 +154,8 @@ export function Sidebar({
         </div>
       )}
 
-      <div className="min-h-0 flex-1 overflow-auto">
+      {/* overscroll-none: 端まで来ても親へスクロールを伝播させない (横端でのスワイプバックも防ぐ) */}
+      <div className="min-h-0 flex-1 overflow-auto overscroll-none">
         {tab === 'changes' ? (
           diffFiles.length === 0 ? (
             <Placeholder>No changes</Placeholder>
