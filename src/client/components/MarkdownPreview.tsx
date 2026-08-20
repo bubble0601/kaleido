@@ -351,8 +351,14 @@ document.addEventListener('click', function (event) {
     else if (event.clientX < width - toc.offsetWidth) toc.classList.remove('is-open');
   }, { passive: true });
   document.documentElement.addEventListener('mouseleave', function (event) {
-    // 右端 (スクロールバー側) へ抜けたときは開いたままにする
-    if (event.clientX >= document.documentElement.clientWidth - 2) return;
+    if (!narrow.matches) return;
+    // 右端 (スクロールバー側) へ抜けたときは開く。
+    // 素早く動かすと当たり判定の中で mousemove が発火しないまま
+    // スクロールバーに乗ってしまうため、この抜け際を開く合図として扱う
+    if (event.clientX >= document.documentElement.clientWidth - 2) {
+      toc.classList.add('is-open');
+      return;
+    }
     toc.classList.remove('is-open');
   });
 })();
