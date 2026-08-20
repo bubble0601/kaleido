@@ -548,7 +548,7 @@ export function App() {
               {isEditable && (
                 <button
                   type="button"
-                  className="rounded p-1 text-neutral-500 hover:bg-neutral-200 disabled:opacity-40 disabled:hover:bg-transparent dark:text-neutral-400 dark:hover:bg-neutral-700"
+                  className="shrink-0 rounded p-1 text-neutral-500 hover:bg-neutral-200 disabled:opacity-40 disabled:hover:bg-transparent dark:text-neutral-400 dark:hover:bg-neutral-700"
                   title="Save (⌘S)"
                   disabled={!isDirty}
                   onClick={() => void saveFile()}
@@ -561,7 +561,7 @@ export function App() {
                 </button>
               )}
               {previewKind && (
-                <div className="flex overflow-hidden rounded border border-neutral-300 dark:border-neutral-700">
+                <div className="flex shrink-0 overflow-hidden rounded border border-neutral-300 dark:border-neutral-700">
                   {PREVIEW_MODES.map(({ mode, label, icon }) => (
                     <button
                       key={mode}
@@ -583,7 +583,7 @@ export function App() {
               {effectiveViewMode === 'file' && effectivePreviewMode !== 'preview' && (
               <button
                 type="button"
-                className="rounded p-1 text-neutral-500 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:bg-neutral-700"
+                className="shrink-0 rounded p-1 text-neutral-500 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:bg-neutral-700"
                 title={isAllFolded ? 'Unfold all' : 'Fold all'}
                 onClick={toggleFoldAll}
               >
@@ -602,7 +602,7 @@ export function App() {
               )}
               <button
                 type="button"
-                className="rounded p-1 text-neutral-500 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:bg-neutral-700"
+                className="shrink-0 rounded p-1 text-neutral-500 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:bg-neutral-700"
                 title="Comment on the whole file"
                 onClick={() => setIsFileCommentOpen(true)}
               >
