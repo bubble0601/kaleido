@@ -187,7 +187,7 @@ export function FileTree<T extends FileTreeEntry>({
 }: FileTreeProps<T>) {
   const tree = useMemo(() => buildTree(files, sort), [files, sort]);
   return (
-    <div className="py-1 text-[13px] leading-6">
+    <div className="w-max min-w-full py-1 text-[13px] leading-6">
       <TreeLevel
         nodes={tree}
         depth={0}
@@ -272,13 +272,13 @@ function DirRow<T extends FileTreeEntry>({
     <div>
       <button
         type="button"
-        className="flex w-full items-center gap-1 px-2 text-left text-neutral-500 hover:bg-neutral-200/60 dark:text-neutral-400 dark:hover:bg-neutral-800"
+        className="flex w-full items-center gap-1 px-2 text-left text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
         onClick={() => ctx.folding.toggleDir(node.path)}
       >
         <ChevronIcon isOpen={isOpen} />
         <Icon icon={isOpen ? FOLDER_OPENED_ICON : FOLDER_ICON} className="size-4 shrink-0" aria-hidden />
-        <span className="truncate">{node.name}</span>
+        <span className="whitespace-nowrap">{node.name}</span>
       </button>
       {isOpen && <TreeLevel nodes={node.children} depth={depth + 1} ctx={ctx} />}
     </div>
@@ -297,14 +297,17 @@ function FileRow<T extends FileTreeEntry>({
   const { selectedPath, viewedPaths, commentCounts, onSelect, onToggleViewed } = ctx;
   const { file } = node;
   const status = file.status ? STATUS_STYLE[file.status] : null;
+  const commentCount = commentCounts?.get(file.path) ?? 0;
+  /** 右端に貼り付ける印があるか。無い行は自前で右の余白を持つ */
+  const hasMarks = status !== null || commentCount > 0;
   const isSelected = selectedPath === file.path;
   const isViewed = viewedPaths?.has(file.path) ?? false;
   return (
     <div
-      className={`group flex w-full cursor-pointer items-center gap-1.5 px-2 ${
+      className={`group flex w-full cursor-pointer items-center gap-1.5 ${hasMarks ? '' : 'pr-2'} ${
         isSelected
-          ? 'bg-neutral-300/60 dark:bg-neutral-700/70'
-          : 'hover:bg-neutral-200/60 dark:hover:bg-neutral-800'
+          ? 'bg-neutral-200 dark:bg-neutral-700'
+          : 'bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-900 dark:hover:bg-neutral-800'
       } ${isViewed ? 'opacity-50' : ''}`}
       style={{ paddingLeft: `${depth * 12 + 8}px` }}
       onClick={() => onSelect(file.path)}
@@ -320,14 +323,19 @@ function FileRow<T extends FileTreeEntry>({
         />
       )}
       <Icon icon={getFileTypeIconName(file.path)} className="size-4 shrink-0" aria-hidden />
-      <span className="min-w-0 flex-1 truncate" title={file.path}>
+      <span className="flex-1 whitespace-nowrap" title={file.path}>
         {node.name}
       </span>
-      <CommentCountBadge count={commentCounts?.get(file.path) ?? 0} />
-      {status && (
-        <span className={`w-3 shrink-0 text-center font-bold ${status.className}`}>
-          {status.letter}
-        </span>
+      {/* 右端の印は横スクロールしても見えるように貼り付ける (背景は行から受け継ぐ) */}
+      {hasMarks && (
+        <div className="sticky right-0 flex shrink-0 items-center gap-1.5 bg-inherit pl-1.5 pr-2">
+          <CommentCountBadge count={commentCount} />
+          {status && (
+            <span className={`w-3 shrink-0 text-center font-bold ${status.className}`}>
+              {status.letter}
+            </span>
+          )}
+        </div>
       )}
     </div>
   );
