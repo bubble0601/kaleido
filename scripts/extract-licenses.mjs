@@ -54,7 +54,7 @@ const entries = Object.entries(JSON.parse(raw))
     };
   })
   // 自分自身は載せない
-  .filter((entry) => entry.name !== '@bubble0601/kaleido' && entry.name !== 'kaleido')
+  .filter((entry) => entry.name !== '@adanami/kaleido' && entry.name !== 'kaleido')
   .sort((a, b) => a.name.localeCompare(b.name));
 
 mkdirSync(dirname(outPath), { recursive: true });

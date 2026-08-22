@@ -16,8 +16,8 @@ Monaco Editor ベースのローカル Web ファイルビューア。CLI から
 Node.js 20 以上が必要。コマンド名は `kaleido`。
 
 ```bash
-npx @bubble0601/kaleido            # インストールせずに試す
-npm install -g @bubble0601/kaleido # 常用する (pnpm add -g でも可)
+npx @adanami/kaleido            # インストールせずに試す
+npm install -g @adanami/kaleido # 常用する (pnpm add -g でも可)
 ```
 
 ## 使い方

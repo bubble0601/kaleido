@@ -1,5 +1,5 @@
 {
-  "name": "@bubble0601/kaleido",
+  "name": "@adanami/kaleido",
   "version": "0.1.0",
   "description": "Monaco-based local web file viewer: browse any directory, diff git ranges, with real TypeScript hover, lint diagnostics, comments and review marks",
   "type": "module",
