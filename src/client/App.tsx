@@ -77,6 +77,7 @@ export function App() {
     previewMode,
     openedFrom,
     theme,
+    editorFontSize,
     previewFontSize,
     setRange,
     setSelectedPath,
@@ -94,6 +95,14 @@ export function App() {
     document.documentElement.classList.toggle('dark', theme === 'dark');
     monaco.editor.setTheme(theme === 'dark' ? 'vs-dark' : 'vs');
   }, [theme]);
+
+  // Peek ビューなど、monaco がフォントを当ててくれない部分へ CSS 変数で渡す
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      '--kaleido-editor-font-size',
+      `${editorFontSize}px`,
+    );
+  }, [editorFontSize]);
 
   // 設定が system のときは OS 側の切り替えに追従する
   const syncSystemTheme = useUiStore((state) => state.syncSystemTheme);

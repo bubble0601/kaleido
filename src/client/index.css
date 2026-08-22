@@ -22,6 +22,16 @@ body {
   @apply bg-white text-neutral-800 dark:bg-[#1e1e1e] dark:text-[#d4d4d4];
 }
 
+/*
+ * Peek ビュー (Find All References / Go to Definition) の一覧。
+ * monaco はエディタのフォント指定を view-lines などにしか適用しないため、
+ * ここは body の 16px を継いで大きくなってしまう。設定の文字サイズに揃える
+ * (中に埋まっているエディタは自前でフォントを持つので影響しない)。
+ */
+.monaco-editor .zone-widget {
+  font-size: var(--kaleido-editor-font-size, 13px);
+}
+
 /* コメント追加用の glyph margin ボタン */
 .kaleido-comment-glyph {
   cursor: pointer;
