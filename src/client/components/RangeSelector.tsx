@@ -91,11 +91,13 @@ export function RangeSelector({ current, onChange }: RangeSelectorProps) {
     range: { target: c.sha, base: `${c.sha}^` },
   }));
 
-  const pullOptions: RangeOption[] = pullRequests.map((pr) => ({
+  const toPullOption = (pr: PullRequestMeta): RangeOption => ({
     label: describePull(pr),
     range: pullRange(pr),
     pullNumber: pr.number,
-  }));
+  });
+  const pullOptions = pullRequests.filter((pr) => pr.state === 'OPEN').map(toPullOption);
+  const mergedPullOptions = pullRequests.filter((pr) => pr.state !== 'OPEN').map(toPullOption);
 
   const select = async (option: RangeOption) => {
     setIsOpen(false);
@@ -177,6 +179,9 @@ export function RangeSelector({ current, onChange }: RangeSelectorProps) {
           <OptionGroup title="Quick" options={quickOptions} current={current} onSelect={select} />
           {pullOptions.length > 0 && (
             <OptionGroup title="Pull requests" options={pullOptions} current={current} onSelect={select} />
+          )}
+          {mergedPullOptions.length > 0 && (
+            <OptionGroup title="Merged pull requests" options={mergedPullOptions} current={current} onSelect={select} />
           )}
           {branchOptions.length > 0 && (
             <OptionGroup title="Branches" options={branchOptions} current={current} onSelect={select} />

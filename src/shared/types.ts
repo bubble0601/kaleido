@@ -86,8 +86,14 @@ export interface DocsResponse {
 export interface PullRequestMeta {
   number: number;
   title: string;
+  state: PullState;
   headRefName: string;
   baseRefName: string;
+  /**
+   * GitHub が diff の基準にしている base 側のコミット。
+   * merge / close 後は固定されるので、merge 済み PR の diff はこれとの merge-base で出す
+   */
+  baseRefOid: string;
   author: string;
   isDraft: boolean;
   url: string;
@@ -274,11 +280,18 @@ export function pullRequestLinks(repoUrl: string, number: number): { html: strin
   };
 }
 
-/** PR の比較範囲: base ブランチとの merge-base から PR head まで */
-export function pullRange(pull: Pick<PullRequestMeta, 'number' | 'baseRefName'>): RangeSpec {
+/**
+ * PR の比較範囲: base との merge-base から PR head まで。
+ * open な PR は base ブランチの ref を使う (base が進んでもコメントのキーが変わらない)。
+ * merge / close 済みは head が base の祖先になり merge-base が head 自身になってしまうので、
+ * GitHub が固定している base コミット (baseRefOid) を使う
+ */
+export function pullRange(
+  pull: Pick<PullRequestMeta, 'number' | 'state' | 'baseRefName' | 'baseRefOid'>,
+): RangeSpec {
   return {
     target: pullRequestRef(pull.number),
-    base: `origin/${pull.baseRefName}`,
+    base: pull.state === 'OPEN' ? `origin/${pull.baseRefName}` : pull.baseRefOid,
     baseMode: 'merge-base',
   };
 }

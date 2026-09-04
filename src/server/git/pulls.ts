@@ -15,7 +15,8 @@ import {
 
 const execFileAsync = promisify(execFile);
 
-const PR_JSON_FIELDS = 'number,title,headRefName,baseRefName,author,isDraft,url,updatedAt';
+const PR_JSON_FIELDS =
+  'number,title,state,headRefName,baseRefName,baseRefOid,author,isDraft,url,updatedAt';
 
 /** 本文・会話・行コメントをまとめて引く。件数は first:100 で打ち切る (それ以上は稀) */
 const PR_DETAIL_QUERY = `
@@ -23,7 +24,7 @@ query($owner: String!, $name: String!, $number: Int!) {
   repository(owner: $owner, name: $name) {
     pullRequest(number: $number) {
       number title body state isDraft url createdAt updatedAt
-      baseRefName headRefName headRefOid additions deletions changedFiles
+      baseRefName baseRefOid headRefName headRefOid additions deletions changedFiles
       author { login }
       comments(first: 100) {
         nodes { id author { login } body createdAt url }
@@ -57,6 +58,7 @@ interface GhPullDetail {
   createdAt: string;
   updatedAt: string;
   baseRefName: string;
+  baseRefOid: string;
   headRefName: string;
   headRefOid: string;
   additions: number;
@@ -148,6 +150,7 @@ function toDetail(pr: GhPullDetail): PullDetail {
     title: pr.title,
     headRefName: pr.headRefName,
     baseRefName: pr.baseRefName,
+    baseRefOid: pr.baseRefOid,
     author: pr.author?.login ?? '',
     isDraft: pr.isDraft,
     url: pr.url,
@@ -168,8 +171,10 @@ function toDetail(pr: GhPullDetail): PullDetail {
 interface GhPullRequest {
   number: number;
   title: string;
+  state: PullState;
   headRefName: string;
   baseRefName: string;
+  baseRefOid: string;
   author: { login: string } | null;
   isDraft: boolean;
   url: string;
@@ -180,8 +185,10 @@ function toMeta(pr: GhPullRequest): PullRequestMeta {
   return {
     number: pr.number,
     title: pr.title,
+    state: pr.state,
     headRefName: pr.headRefName,
     baseRefName: pr.baseRefName,
+    baseRefOid: pr.baseRefOid,
     author: pr.author?.login ?? '',
     isDraft: pr.isDraft,
     url: pr.url,
@@ -232,17 +239,37 @@ export class GitPulls {
     return stdout;
   }
 
-  /** open な PR 一覧。gh が使えない・GitHub リポジトリでない・オフラインなら空 */
+  /**
+   * open な PR (最大 30 件) と最近 merge された PR (最大 10 件)。
+   * gh が使えない・GitHub リポジトリでない・オフラインなら空
+   */
   async list(): Promise<PullRequestMeta[]> {
     if (this.isGhMissing) return [];
     try {
-      const out = await this.gh(['pr', 'list', '--state', 'open', '--limit', '30', '--json', PR_JSON_FIELDS]);
-      const prs: GhPullRequest[] = JSON.parse(out);
-      return prs.map(toMeta);
+      const [open, merged] = await Promise.all([
+        this.listByState('open', 30),
+        this.listByState('merged', 10),
+      ]);
+      return [...open, ...merged];
     } catch (error) {
       if (isEnoent(error)) this.isGhMissing = true;
       return [];
     }
+  }
+
+  private async listByState(state: 'open' | 'merged', limit: number): Promise<PullRequestMeta[]> {
+    const out = await this.gh([
+      'pr',
+      'list',
+      '--state',
+      state,
+      '--limit',
+      String(limit),
+      '--json',
+      PR_JSON_FIELDS,
+    ]);
+    const prs: GhPullRequest[] = JSON.parse(out);
+    return prs.map(toMeta);
   }
 
   async view(number: number): Promise<PullRequestMeta> {
@@ -322,6 +349,30 @@ export class GitPulls {
     } catch (error) {
       throw new Error(`Could not fetch PR #${number} from origin: ${stderrOf(error)}`);
     }
+    // merge 済みの base コミットは通常 base ブランチの履歴にあるが、
+    // 無ければ (force push 後など) コミット単位で取りに行く
+    if (pull.state !== 'OPEN' && !(await this.hasCommit(pull.baseRefOid))) {
+      try {
+        await execFileAsync('git', ['fetch', '--no-tags', 'origin', pull.baseRefOid], {
+          cwd: this.repoRoot,
+          encoding: 'utf8',
+          env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+        });
+      } catch (error) {
+        throw new Error(
+          `Could not fetch the base commit ${pull.baseRefOid.slice(0, 7)} of PR #${number}: ${stderrOf(error)}`,
+        );
+      }
+    }
     return { range: pullRange(pull), pull };
+  }
+
+  private async hasCommit(sha: string): Promise<boolean> {
+    try {
+      await execFileAsync('git', ['cat-file', '-e', `${sha}^{commit}`], { cwd: this.repoRoot });
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
