@@ -14,13 +14,23 @@ export class GitRefs {
   }
 
   async getRanges(): Promise<RangesResponse> {
-    const [branches, log, defaultBranch, pullRequests] = await Promise.all([
+    const [branches, log, defaultBranch, pullRequests, githubRepoUrl] = await Promise.all([
       this.getBranches(),
       this.getRecentCommits(),
       this.getDefaultBranch(),
       this.pulls.list(),
+      this.getGithubRepoUrl(),
     ]);
-    return { branches, recentCommits: log, defaultBranch, pullRequests };
+    return { branches, recentCommits: log, defaultBranch, pullRequests, githubRepoUrl };
+  }
+
+  private async getGithubRepoUrl(): Promise<string | null> {
+    try {
+      const out = await this.git.raw(['remote', 'get-url', 'origin']);
+      return parseGithubRepoUrl(out.trim());
+    } catch {
+      return null;
+    }
   }
 
   private async getBranches(): Promise<string[]> {
@@ -59,4 +69,19 @@ export class GitRefs {
       return null;
     }
   }
+}
+
+/**
+ * git リモート URL を GitHub のリポジトリページ URL にする。
+ * https://github.com/o/r.git, git@github.com:o/r.git, ssh://git@github.com/o/r.git に対応。
+ * ホストが github.com / *.ghe.com / github.* でなければ GitHub ではないとみなして null
+ */
+export function parseGithubRepoUrl(remote: string): string | null {
+  const match =
+    /^(?:https?:\/\/|ssh:\/\/)?(?:[^@/]+@)?([^:/]+)(?::\d+)?[:/]([^/]+)\/([^/]+?)(?:\.git)?\/?$/.exec(remote);
+  if (!match) return null;
+  const [, host, owner, repo] = match;
+  if (!host || !owner || !repo) return null;
+  const isGithubHost = host === 'github.com' || host.endsWith('.ghe.com') || host.startsWith('github.');
+  return isGithubHost ? `https://${host}/${owner}/${repo}` : null;
 }

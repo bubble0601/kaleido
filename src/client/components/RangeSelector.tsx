@@ -4,6 +4,7 @@ import {
   describeRange,
   pullNumberOfRef,
   pullRange,
+  pullRequestLinks,
   type PullRequestMeta,
   type RangeSpec,
 } from '../../shared/types';
@@ -51,7 +52,14 @@ export function RangeSelector({ current, onChange }: RangeSelectorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const pullRequests = ranges.data?.pullRequests ?? [];
-  const currentPull = pullRequests.find((pr) => pr.number === pullNumberOfRef(current.target));
+  const currentPullNumber = pullNumberOfRef(current.target);
+  const currentPull = pullRequests.find((pr) => pr.number === currentPullNumber);
+  // 一覧 (open な PR のみ) に無い PR でもリンクを出せるよう、リポジトリ URL から組み立てる
+  const repoUrl = ranges.data?.githubRepoUrl ?? null;
+  const pullLinks =
+    currentPullNumber !== null && repoUrl !== null
+      ? pullRequestLinks(repoUrl, currentPullNumber)
+      : null;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -110,9 +118,10 @@ export function RangeSelector({ current, onChange }: RangeSelectorProps) {
 
   return (
     <div ref={containerRef} className="relative">
+      <div className="flex items-stretch gap-1">
       <button
         type="button"
-        className="flex w-full items-center gap-1 rounded border border-neutral-300 bg-white px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
+        className="flex min-w-0 flex-1 items-center gap-1 rounded border border-neutral-300 bg-white px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
         title={`Compare: ${describeRange(current)}`}
         onClick={() => setIsOpen(!isOpen)}
       >
@@ -132,6 +141,32 @@ export function RangeSelector({ current, onChange }: RangeSelectorProps) {
         </span>
         <span className="shrink-0 text-[10px]">▾</span>
       </button>
+      {pullLinks && (
+        <>
+          <ExternalLink href={pullLinks.html} title={`Open PR #${currentPullNumber} on GitHub`}>
+            {/* GitHub の PR アイコン (git-pull-request) */}
+            <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <circle cx="4" cy="3.5" r="1.8" />
+              <circle cx="4" cy="12.5" r="1.8" />
+              <circle cx="12" cy="12.5" r="1.8" />
+              <path d="M4 5.3v5.4" />
+              <path d="M9 3.5h1.5A1.5 1.5 0 0 1 12 5v5.7" />
+              <path d="M10.6 1.9 9 3.5l1.6 1.6" />
+            </svg>
+          </ExternalLink>
+          {pullLinks.dev && (
+            <ExternalLink href={pullLinks.dev} title={`Open PR #${currentPullNumber} in github.dev`}>
+              {/* コードエディタ (github.dev) を表す <> */}
+              <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M5.5 4 2 8l3.5 4" />
+                <path d="M10.5 4 14 8l-3.5 4" />
+                <path d="M9.2 2.5 6.8 13.5" />
+              </svg>
+            </ExternalLink>
+          )}
+        </>
+      )}
+      </div>
       {fetchError && (
         <div className="mt-1 break-words text-[11px] text-red-600 dark:text-red-400" role="alert">
           {fetchError}
@@ -152,6 +187,29 @@ export function RangeSelector({ current, onChange }: RangeSelectorProps) {
         </div>
       )}
     </div>
+  );
+}
+
+function ExternalLink({
+  href,
+  title,
+  children,
+}: {
+  href: string;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={title}
+      aria-label={title}
+      className="flex shrink-0 items-center rounded border border-neutral-300 bg-white px-1.5 text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
+    >
+      {children}
+    </a>
   );
 }
 

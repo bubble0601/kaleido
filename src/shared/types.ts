@@ -100,6 +100,8 @@ export interface RangesResponse {
   defaultBranch: string | null;
   /** open な PR (gh が使えない・GitHub でないリポジトリでは空) */
   pullRequests: PullRequestMeta[];
+  /** origin の GitHub リポジトリ URL (例: https://github.com/owner/repo)。GitHub でなければ null */
+  githubRepoUrl: string | null;
 }
 
 /** PR を fetch した結果。range は origin/pr/<N> を base ブランチと merge-base 比較するもの */
@@ -203,6 +205,15 @@ export function pullRequestRef(number: number): string {
 export function pullNumberOfRef(ref: string): number | null {
   const match = /^origin\/pr\/(\d+)$/.exec(ref);
   return match ? Number(match[1]) : null;
+}
+
+/** PR のページ URL と github.dev で開く URL (github.com 以外の GHE には github.dev が無いので null) */
+export function pullRequestLinks(repoUrl: string, number: number): { html: string; dev: string | null } {
+  const url = new URL(repoUrl);
+  return {
+    html: `${repoUrl}/pull/${number}`,
+    dev: url.hostname === 'github.com' ? `https://github.dev${url.pathname}/pull/${number}` : null,
+  };
 }
 
 /** PR の比較範囲: base ブランチとの merge-base から PR head まで */

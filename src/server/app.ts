@@ -131,6 +131,7 @@ export function createApp(ctx: AppContext): Hono {
         recentCommits: [],
         defaultBranch: null,
         pullRequests: [],
+        githubRepoUrl: null,
       };
       return c.json(empty);
     }
