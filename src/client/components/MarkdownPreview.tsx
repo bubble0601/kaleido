@@ -478,8 +478,6 @@ body.markdown-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 40px;
-  max-width: 1280px;
-  margin: 0 auto;
   padding: 32px 24px 64px;
   /* 目次をオーバーレイにしたときの背景色を body から引き継ぐための中継 */
   background-color: inherit;
