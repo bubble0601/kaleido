@@ -1,11 +1,11 @@
 import { Command } from 'commander';
-import open from 'open';
 
 import { formatAllCommentsPrompt } from '../shared/commentFormat.js';
 import { describeRange, rangeKey } from '../shared/types.js';
 import { startServer } from '../server/index.js';
 import { openReviewStore } from '../server/store/reviewStore.js';
 import { resolveViewerTarget } from './args.js';
+import { openInBrowser } from './browser.js';
 
 const program = new Command();
 
@@ -72,7 +72,7 @@ program
       console.log(`  ${url}`);
 
       if (options.open) {
-        await open(url);
+        await openInBrowser(url);
       }
     } catch (error) {
       console.error(error instanceof Error ? error.message : error);

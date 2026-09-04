@@ -51,6 +51,8 @@ PR の表示には [GitHub CLI](https://cli.github.com/) (`gh`、ログイン済
 | `--no-open` | ブラウザを自動で開かない |
 | `--no-keep-alive` | 全タブが閉じられたらサーバーを終了する |
 
+[Orca](https://github.com/stablyai/orca) のターミナルから起動したときは、OS 既定のブラウザではなく Orca 内蔵ブラウザの新規タブに開く (`TERM_PROGRAM=Orca` で判定)。
+
 キーボード: `j` / `k` でファイル移動、`v` でレビュー済みトグル、⌘P で Quick Open、⌘B でサイドバー、⌘S で保存。
 
 ## 機能
