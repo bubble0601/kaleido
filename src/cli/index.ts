@@ -21,7 +21,7 @@ program
   .description('start the viewer (default command)')
   .argument(
     '[target]',
-    'directory to browse, commit-ish to view, or "working" / "staged" / "." (default: auto-detect)',
+    'directory to browse, commit-ish to view, "working" / "staged" / ".", or "pr <number|url>" (default: auto-detect)',
   )
   .argument('[base]', 'commit-ish to compare against (default: HEAD or <target>^)')
   .option('--port <port>', 'preferred port (auto-increments if taken)', '4890')
@@ -33,11 +33,12 @@ program
   .option('--no-keep-alive', 'shut down the server when all browser tabs are closed')
   .action(async (target: string | undefined, base: string | undefined, options) => {
     try {
-      const { rootDir, isGitRepo, range } = resolveViewerTarget({
+      const { rootDir, isGitRepo, range } = await resolveViewerTarget({
         cwd: process.cwd(),
         dir: options.dir ?? options.repo,
         target,
         base,
+        shouldFetchPull: true,
       });
 
       const printCommentsAndExit = (): never => {
@@ -82,14 +83,14 @@ program
 program
   .command('comments')
   .description('print saved comments for a range as an AI prompt')
-  .argument('[target]', 'commit-ish, or "working" / "staged" / "." (default: ".")')
+  .argument('[target]', 'commit-ish, "working" / "staged" / ".", or "pr <number|url>" (default: ".")')
   .argument('[base]', 'commit-ish to compare against (default: HEAD or <target>^)')
   .option('--dir <path>', 'directory to read comments for (default: current directory)')
   .option('--repo <path>', 'alias of --dir')
   .option('--json', 'output as JSON instead of prompt text')
-  .action((target: string | undefined, base: string | undefined, options) => {
+  .action(async (target: string | undefined, base: string | undefined, options) => {
     try {
-      const { rootDir, range } = resolveViewerTarget({
+      const { rootDir, range } = await resolveViewerTarget({
         cwd: process.cwd(),
         dir: options.dir ?? options.repo,
         target,

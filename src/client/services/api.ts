@@ -9,6 +9,7 @@ import type {
   HoverRequest,
   HoverResponse,
   MetaResponse,
+  PullFetchResponse,
   RangeSpec,
   RangesResponse,
   DefinitionLocation,
@@ -42,6 +43,9 @@ export const api = {
   getMeta: () => request<MetaResponse>('/api/meta'),
 
   getRanges: () => request<RangesResponse>('/api/ranges'),
+
+  fetchPull: (number: number) =>
+    request<PullFetchResponse>(`/api/pulls/${number}/fetch`, { method: 'POST' }),
 
   getFiles: () => request<FilesResponse>('/api/files'),
 

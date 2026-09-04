@@ -1,26 +1,36 @@
 import { simpleGit, type SimpleGit } from 'simple-git';
 
 import type { RangesResponse } from '../../shared/types.js';
+import type { GitPulls } from './pulls.js';
 
 export class GitRefs {
   private git: SimpleGit;
 
-  constructor(repoRoot: string) {
+  constructor(
+    repoRoot: string,
+    private pulls: GitPulls,
+  ) {
     this.git = simpleGit(repoRoot);
   }
 
   async getRanges(): Promise<RangesResponse> {
-    const [branches, log, defaultBranch] = await Promise.all([
+    const [branches, log, defaultBranch, pullRequests] = await Promise.all([
       this.getBranches(),
       this.getRecentCommits(),
       this.getDefaultBranch(),
+      this.pulls.list(),
     ]);
-    return { branches, recentCommits: log, defaultBranch };
+    return { branches, recentCommits: log, defaultBranch, pullRequests };
   }
 
   private async getBranches(): Promise<string[]> {
     const summary = await this.git.branch(['--sort=-committerdate']);
-    return summary.all.filter((b) => !b.startsWith('remotes/') || b.startsWith('remotes/origin/'));
+    // fetch 済みの PR head (origin/pr/N) は Pull requests として別に出すのでブランチ一覧からは外す
+    return summary.all.filter(
+      (b) =>
+        (!b.startsWith('remotes/') || b.startsWith('remotes/origin/')) &&
+        !b.startsWith('remotes/origin/pr/'),
+    );
   }
 
   private async getRecentCommits(): Promise<RangesResponse['recentCommits']> {

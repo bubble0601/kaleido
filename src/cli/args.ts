@@ -2,7 +2,8 @@ import { execFileSync, execSync } from 'node:child_process';
 import { realpathSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { BROWSE_RANGE, type RangeSpec } from '../shared/types.js';
+import { BROWSE_RANGE, pullRange, type RangeSpec } from '../shared/types.js';
+import { GitPulls, parsePullNumber } from '../server/git/pulls.js';
 
 /** git の toplevel を返す。git 管理下でなければ null */
 export function findGitRoot(cwd: string): string | null {
@@ -46,23 +47,59 @@ export interface ViewerTarget {
 }
 
 /**
+ * 位置引数が pull request 指定なら PR 番号を返す。
+ * - `pr <番号|URL>`            (target が 'pr' で base が番号)
+ * - `#123` / `pr/123` / `pull/123` / GitHub の PR URL
+ */
+function parsePullTarget(target: string | undefined, base: string | undefined): number | null {
+  if (target === undefined) return null;
+  if (target === 'pr') {
+    const number = base === undefined ? null : parsePullNumber(base);
+    if (number === null) {
+      throw new Error('Usage: kaleido pr <number | GitHub PR URL>');
+    }
+    return number;
+  }
+  if (!/^(#|pr\/|pull\/|https?:\/\/)/.test(target)) return null;
+  const number = parsePullNumber(target);
+  if (number === null) return null;
+  if (base !== undefined) throw new Error('A base cannot be given when opening a pull request');
+  return number;
+}
+
+/**
  * 位置引数・オプションから「どこを・どの範囲で開くか」を決める。
  *
  * - `--dir` か、ディレクトリとして存在する位置引数 → そのディレクトリを root にする。
  *   git の toplevel と一致すれば diff 機能あり、一致しなければ閲覧のみ (browse)
+ * - pull request 指定 → gh で head/base を引き、origin から fetch して merge-base 比較にする
  * - それ以外 → cwd の git toplevel を root にし、位置引数を commit-ish として解釈する
  * - git 管理下でなければ引数なしで browse
  *
  * commit-ish とディレクトリ名が衝突する場合は commit-ish を優先する
- * (`working` / `staged` / `.` は常に特殊キーワード)。
+ * (`working` / `staged` / `.` / `pr` は常に特殊キーワード)。
  */
-export function resolveViewerTarget(params: {
+export async function resolveViewerTarget(params: {
   cwd: string;
   dir?: string;
   target?: string;
   base?: string;
-}): ViewerTarget {
+  /** PR 指定のとき origin から fetch するか (comments サブコマンドでは不要) */
+  shouldFetchPull?: boolean;
+}): Promise<ViewerTarget> {
   const { cwd, target, base } = params;
+
+  const pullNumber = parsePullTarget(target, base);
+  if (pullNumber !== null) {
+    const startDir = params.dir === undefined ? cwd : resolve(cwd, params.dir);
+    const gitRoot = findGitRoot(startDir);
+    if (gitRoot === null) throw new Error(`Not a git repository: ${startDir}`);
+    const pulls = new GitPulls(gitRoot);
+    const range = params.shouldFetchPull
+      ? (await pulls.fetch(pullNumber)).range
+      : pullRange(await pulls.view(pullNumber));
+    return { rootDir: gitRoot, isGitRepo: true, range };
+  }
 
   if (params.dir !== undefined) {
     const dir = resolve(cwd, params.dir);

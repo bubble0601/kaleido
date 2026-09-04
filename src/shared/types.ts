@@ -83,10 +83,29 @@ export interface DocsResponse {
   isTruncated: boolean;
 }
 
+export interface PullRequestMeta {
+  number: number;
+  title: string;
+  headRefName: string;
+  baseRefName: string;
+  author: string;
+  isDraft: boolean;
+  url: string;
+  updatedAt: string;
+}
+
 export interface RangesResponse {
   branches: string[];
   recentCommits: { sha: string; shortSha: string; subject: string; date: string }[];
   defaultBranch: string | null;
+  /** open な PR (gh が使えない・GitHub でないリポジトリでは空) */
+  pullRequests: PullRequestMeta[];
+}
+
+/** PR を fetch した結果。range は origin/pr/<N> を base ブランチと merge-base 比較するもの */
+export interface PullFetchResponse {
+  range: RangeSpec;
+  pull: PullRequestMeta;
 }
 
 export interface HoverRequest {
@@ -172,6 +191,29 @@ export interface ViewedState {
 
 export type ServerEvent = { type: 'files-changed' } | { type: 'connected' };
 
+/**
+ * PR の head を fetch するローカル ref (`refs/remotes/origin/pr/<N>` の短縮形)。
+ * `+refs/pull/*\/head:refs/remotes/origin/pr/*` という広く使われる慣例に合わせている
+ */
+export function pullRequestRef(number: number): string {
+  return `origin/pr/${number}`;
+}
+
+/** ref が PR の head ref なら PR 番号、そうでなければ null */
+export function pullNumberOfRef(ref: string): number | null {
+  const match = /^origin\/pr\/(\d+)$/.exec(ref);
+  return match ? Number(match[1]) : null;
+}
+
+/** PR の比較範囲: base ブランチとの merge-base から PR head まで */
+export function pullRange(pull: Pick<PullRequestMeta, 'number' | 'baseRefName'>): RangeSpec {
+  return {
+    target: pullRequestRef(pull.number),
+    base: `origin/${pull.baseRefName}`,
+    baseMode: 'merge-base',
+  };
+}
+
 export function rangeKey(range: RangeSpec): string {
   const sanitize = (s: string) => s.replace(/[^a-zA-Z0-9_.-]/g, '_');
   const mode = range.baseMode === 'merge-base' ? '~mb' : '';
@@ -183,6 +225,8 @@ export function describeRange(range: RangeSpec): string {
   if (range.target === 'working') return 'unstaged changes';
   if (range.target === 'staged') return `${range.base}..staged`;
   if (range.target === '.') return `${range.base}..working tree`;
+  const pullNumber = pullNumberOfRef(range.target);
+  if (pullNumber !== null) return `PR #${pullNumber} (${range.base}...${range.target})`;
   const sep = range.baseMode === 'merge-base' ? '...' : '..';
   return `${range.base}${sep}${range.target}`;
 }

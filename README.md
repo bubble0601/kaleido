@@ -29,12 +29,16 @@ kaleido working             # unstaged changes (index vs working tree)
 kaleido staged              # staged changes (HEAD vs index)
 kaleido <commit>            # そのコミットの diff (<commit>^ vs <commit>)
 kaleido <target> <base>     # 任意の比較 (base vs target)
+kaleido pr 123              # GitHub の pull request (base ブランチとの merge-base vs PR head)
+kaleido https://github.com/owner/repo/pull/123   # PR の URL でも可
 
 kaleido comments [target] [base]   # 保存済みコメントを AI プロンプト形式で stdout に出力
 ```
 
 位置引数は「ディレクトリ」または「比較範囲」。commit-ish として解決できなければディレクトリと解釈する (`--dir` で明示もできる)。
 引数なしのときは staged 変更 → working 変更 → 直近コミットの順に自動判定する。
+
+PR の表示には [GitHub CLI](https://cli.github.com/) (`gh`、ログイン済み) が必要。`refs/pull/<N>/head` を `origin/pr/<N>` に fetch して開くので、fork からの PR も checkout なしで読める。
 
 表示中の状態は URL クエリ (`?target=&base=&path=&tab=`) に同期されるので、リロード・共有できる。
 
@@ -57,6 +61,7 @@ kaleido comments [target] [base]   # 保存済みコメントを AI プロンプ
 - **HTML プレビュー**: `/preview` から配信するので相対パスの CSS / JS / 画像も読め、スクリプトも動く
 - **型情報と診断**: hover / 型エラー / 定義ジャンプ / 参照検索と、プロジェクトの eslint による行マーカー
 - **レビュー** (git のみ): 比較範囲の切替、内容ハッシュで残るレビュー済みマーク、行/範囲コメント。状態はサーバー側にファイル保存されるのでブラウザを変えても消えない
+- **Pull request** (GitHub のみ): 範囲セレクタに open な PR が並び、選ぶと最新の head を fetch して base ブランチとの merge-base 比較で開く。コメントは PR 単位で残る
 - **設定**: 歯車から配色 (既定は OS 追従) と文字サイズ、ライセンス表記
 
 ![型情報のホバーと行コメント](docs/kaleido-demo-hover-comment.gif)

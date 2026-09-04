@@ -4,6 +4,7 @@ import type { RangeSpec } from '../shared/types.js';
 import { FileContent } from './files/content.js';
 import { loadViewerConfig, type ViewerConfig } from './files/config.js';
 import { GitDiff } from './git/diff.js';
+import { GitPulls } from './git/pulls.js';
 import { GitRefs } from './git/refs.js';
 import { EventBus } from './events.js';
 import { computeRepoId, ReviewStore } from './store/reviewStore.js';
@@ -19,6 +20,7 @@ export interface AppContext {
   /** 非 git ディレクトリでは null */
   gitDiff: GitDiff | null;
   gitRefs: GitRefs | null;
+  gitPulls: GitPulls | null;
   fileContent: FileContent;
   tsService: TsWorkerClient;
   reviewStore: ReviewStore;
@@ -37,6 +39,7 @@ export function createAppContext(
 ): AppContext {
   const realRoot = realpathSync(rootDir);
   const repoId = computeRepoId(realRoot);
+  const gitPulls = options.isGitRepo ? new GitPulls(realRoot) : null;
   return {
     rootDir: realRoot,
     repoId,
@@ -44,7 +47,8 @@ export function createAppContext(
     initialRange,
     config: loadViewerConfig(realRoot, options.excludes),
     gitDiff: options.isGitRepo ? new GitDiff(realRoot) : null,
-    gitRefs: options.isGitRepo ? new GitRefs(realRoot) : null,
+    gitRefs: gitPulls ? new GitRefs(realRoot, gitPulls) : null,
+    gitPulls,
     fileContent: new FileContent(realRoot, options.isGitRepo),
     tsService: new TsWorkerClient(realRoot),
     reviewStore: new ReviewStore(repoId, realRoot),
