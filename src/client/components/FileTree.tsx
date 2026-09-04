@@ -169,6 +169,8 @@ interface FileTreeProps<T extends FileTreeEntry> {
   viewedPaths?: Set<string>;
   /** path → その範囲でのコメント数 */
   commentCounts?: Map<string, number>;
+  /** path → GitHub 上のレビュースレッド数 (PR 表示中のみ) */
+  reviewThreadCounts?: Map<string, number>;
   onSelect: (path: string) => void;
   onToggleViewed?: (file: T, isViewed: boolean) => void;
   /** 並び順。既定は名前順 */
@@ -181,6 +183,7 @@ export function FileTree<T extends FileTreeEntry>({
   selectedPath,
   viewedPaths,
   commentCounts,
+  reviewThreadCounts,
   onSelect,
   onToggleViewed,
   sort = 'name',
@@ -191,7 +194,7 @@ export function FileTree<T extends FileTreeEntry>({
       <TreeLevel
         nodes={tree}
         depth={0}
-        ctx={{ folding, selectedPath, viewedPaths, commentCounts, onSelect, onToggleViewed }}
+        ctx={{ folding, selectedPath, viewedPaths, commentCounts, reviewThreadCounts, onSelect, onToggleViewed }}
       />
     </div>
   );
@@ -202,6 +205,7 @@ interface TreeContext<T> {
   selectedPath: string | null;
   viewedPaths?: Set<string>;
   commentCounts?: Map<string, number>;
+  reviewThreadCounts?: Map<string, number>;
   onSelect: (path: string) => void;
   onToggleViewed?: (file: T, isViewed: boolean) => void;
 }
@@ -228,12 +232,14 @@ function TreeLevel<T extends FileTreeEntry>({
   );
 }
 
-function CommentCountBadge({ count }: { count: number }) {
+function CommentCountBadge({ count, isRemote = false }: { count: number; isRemote?: boolean }) {
   if (count === 0) return null;
   return (
     <span
-      className="inline-flex shrink-0 items-center gap-0.5 text-[10px] text-blue-500 dark:text-blue-400"
-      title={`${count} comment(s)`}
+      className={`inline-flex shrink-0 items-center gap-0.5 text-[10px] ${
+        isRemote ? 'text-neutral-500 dark:text-neutral-400' : 'text-blue-500 dark:text-blue-400'
+      }`}
+      title={isRemote ? `${count} review thread(s) on GitHub` : `${count} comment(s)`}
     >
       <svg viewBox="0 0 16 16" className="size-3 shrink-0" aria-hidden>
         <path
@@ -294,12 +300,13 @@ function FileRow<T extends FileTreeEntry>({
   depth: number;
   ctx: TreeContext<T>;
 }) {
-  const { selectedPath, viewedPaths, commentCounts, onSelect, onToggleViewed } = ctx;
+  const { selectedPath, viewedPaths, commentCounts, reviewThreadCounts, onSelect, onToggleViewed } = ctx;
   const { file } = node;
   const status = file.status ? STATUS_STYLE[file.status] : null;
   const commentCount = commentCounts?.get(file.path) ?? 0;
+  const reviewThreadCount = reviewThreadCounts?.get(file.path) ?? 0;
   /** 右端に貼り付ける印があるか。無い行は自前で右の余白を持つ */
-  const hasMarks = status !== null || commentCount > 0;
+  const hasMarks = status !== null || commentCount > 0 || reviewThreadCount > 0;
   const isSelected = selectedPath === file.path;
   const isViewed = viewedPaths?.has(file.path) ?? false;
   return (
@@ -329,6 +336,7 @@ function FileRow<T extends FileTreeEntry>({
       {/* 右端の印は横スクロールしても見えるように貼り付ける (背景は行から受け継ぐ) */}
       {hasMarks && (
         <div className="sticky right-0 flex shrink-0 items-center gap-1.5 bg-inherit pl-1.5 pr-2">
+          <CommentCountBadge count={reviewThreadCount} isRemote />
           <CommentCountBadge count={commentCount} />
           {status && (
             <span className={`w-3 shrink-0 text-center font-bold ${status.className}`}>

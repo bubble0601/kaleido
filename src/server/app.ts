@@ -138,6 +138,20 @@ export function createApp(ctx: AppContext): Hono {
     return c.json(await ctx.gitRefs.getRanges());
   });
 
+  // PR の本文・会話・行コメント (GitHub から都度取得)
+  app.get('/api/pulls/:number', async (c) => {
+    if (!ctx.gitPulls) return c.json({ error: 'Not a git repository' }, 400);
+    const number = Number(c.req.param('number'));
+    if (!Number.isInteger(number) || number <= 0) {
+      return c.json({ error: 'Invalid pull request number' }, 400);
+    }
+    try {
+      return c.json(await ctx.gitPulls.detail(number));
+    } catch (error) {
+      return c.json({ error: error instanceof Error ? error.message : String(error) }, 502);
+    }
+  });
+
   // PR の head/base を origin から取り直して比較範囲を返す (選択のたびに最新化する)
   app.post('/api/pulls/:number/fetch', async (c) => {
     if (!ctx.gitPulls) return c.json({ error: 'Not a git repository' }, 400);

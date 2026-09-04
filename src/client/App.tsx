@@ -8,14 +8,24 @@ import { ActivityBar } from './components/ActivityBar';
 import { CommentsPanel } from './components/CommentsPanel';
 import { QuickOpen } from './components/QuickOpen';
 import { Toolbar } from './components/Toolbar';
-import { useDiff, useFileContent, useLint, useMeta, useTsDiagnostics } from './hooks/queries';
+import {
+  useDiff,
+  useFileContent,
+  useLint,
+  useMeta,
+  usePullDetail,
+  useTsDiagnostics,
+} from './hooks/queries';
 import {
   BROWSE_RANGE,
   isBrowseRange,
   isFileLevelComment,
+  pullNumberOfRef,
   type Comment,
+  type PullReviewThread,
   type RangeSpec,
 } from '../shared/types';
+import { PullOverview } from './components/pull/PullOverview';
 import { api } from './services/api';
 import { computeViewedPaths, useComments, useViewed } from './hooks/review';
 import { useSidebarResize } from './hooks/useSidebarResize';
@@ -85,6 +95,8 @@ export function App() {
     setViewMode,
     setOpenedFrom,
     setPreviewMode,
+    isPullOverviewOpen,
+    openPullOverview,
   } = useUiStore();
   const setPendingReveal = useUiStore((state) => state.setPendingReveal);
   const pendingReveal = useUiStore((state) => state.pendingReveal);
@@ -140,6 +152,18 @@ export function App() {
   const diff = useDiff(range);
   const files = useMemo(() => diff.data?.files ?? [], [diff.data]);
 
+  // PR を表示しているときは本文・会話・レビューコメントも GitHub から引く
+  const pullNumber = range ? pullNumberOfRef(range.target) : null;
+  const pullDetail = usePullDetail(pullNumber);
+  const reviewThreads = useMemo(() => pullDetail.data?.reviewThreads ?? [], [pullDetail.data]);
+  const reviewThreadCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const thread of reviewThreads) {
+      counts.set(thread.path, (counts.get(thread.path) ?? 0) + 1);
+    }
+    return counts;
+  }, [reviewThreads]);
+
   /** 比較対象にあれば diff として、なければ単体ファイルとして開く */
   const openFile = useCallback(
     (path: string, from: SidebarTab | null = null) => {
@@ -169,12 +193,13 @@ export function App() {
     return files.find((f) => f.path === selectedPath) ?? null;
   }, [files, selectedPath, browsePath]);
 
-  // 初期選択 (初回は URL の path を優先) とファイル消滅時のフォールバック
+  // 初期選択 (初回は URL の path を優先) とファイル消滅時のフォールバック。
+  // PR を開いたときは、ファイルより先に概要 (本文・会話) を見せる
   const hasRestoredUrlPathRef = useRef(false);
   useEffect(() => {
     // diff の取得を待たないと、比較対象内のファイルまで browse 扱いになる
     if (!diff.isSuccess) return;
-    if (browsePath || selectedFile) return;
+    if (browsePath || selectedFile || isPullOverviewOpen) return;
     if (!hasRestoredUrlPathRef.current) {
       hasRestoredUrlPathRef.current = true;
       const urlPath = getInitialUrlPath();
@@ -183,8 +208,22 @@ export function App() {
         return;
       }
     }
+    if (pullNumber !== null) {
+      openPullOverview();
+      return;
+    }
     if (files.length > 0) setSelectedPath(files[0]!.path);
-  }, [diff.isSuccess, files, selectedFile, browsePath, openFile, setSelectedPath]);
+  }, [
+    diff.isSuccess,
+    files,
+    selectedFile,
+    browsePath,
+    isPullOverviewOpen,
+    pullNumber,
+    openFile,
+    openPullOverview,
+    setSelectedPath,
+  ]);
 
   // Go to Definition などからのファイルオープン要求
   useEffect(() => {
@@ -435,6 +474,13 @@ export function App() {
     },
     [openFile, setPendingReveal],
   );
+  const jumpToReviewThread = useCallback(
+    (thread: PullReviewThread) => {
+      setPendingReveal({ path: thread.path, line: thread.line ?? thread.originalLine ?? 1, column: 1 });
+      openFile(thread.path, 'changes');
+    },
+    [openFile, setPendingReveal],
+  );
 
   const handleCreateComment = useCallback(
     (params: {
@@ -523,8 +569,14 @@ export function App() {
               browsePath={browsePath}
               viewedPaths={viewedPaths}
               commentCounts={commentCounts}
+              reviewThreadCounts={reviewThreadCounts}
               range={range}
               onRangeChange={setRange}
+              pullOverview={
+                pullNumber !== null
+                  ? { number: pullNumber, isOpen: isPullOverviewOpen, onOpen: openPullOverview }
+                  : null
+              }
               onSelectDiffFile={(path) => {
                 setOpenedFrom('changes');
                 setSelectedPath(path);
@@ -644,7 +696,19 @@ export function App() {
             </div>
           )}
           <div className="flex min-h-0 flex-1">
-          {selectedFile && contentRange && (selectedFile.isBinary || contents.data) ? (
+          {isPullOverviewOpen && pullNumber !== null ? (
+            pullDetail.data ? (
+              <PullOverview pull={pullDetail.data} onJumpToThread={jumpToReviewThread} />
+            ) : (
+              <div className="flex-1">
+                <Centered>
+                  {pullDetail.isError
+                    ? (pullDetail.error as Error).message
+                    : `Loading PR #${pullNumber}…`}
+                </Centered>
+              </div>
+            )
+          ) : selectedFile && contentRange && (selectedFile.isBinary || contents.data) ? (
             <>
             {effectivePreviewMode !== 'preview' && (
             <div className="min-w-0 flex-1">
@@ -657,6 +721,7 @@ export function App() {
               viewMode={effectiveViewMode}
               diagnostics={diagnostics}
               comments={comments}
+              reviewThreads={reviewThreads}
               pendingReveal={pendingReveal}
               onFoldTargetsChange={handleFoldTargetsChange}
               isEditable={isEditable}

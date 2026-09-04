@@ -46,9 +46,13 @@ interface SidebarProps {
   browsePath: string | null;
   viewedPaths: Set<string>;
   commentCounts: Map<string, number>;
+  /** path → GitHub 上のレビュースレッド数 (PR 表示中のみ) */
+  reviewThreadCounts?: Map<string, number>;
   /** 比較範囲 (Changes のときだけ使う) */
   range: RangeSpec;
   onRangeChange: (range: RangeSpec) => void;
+  /** PR 表示中の「概要」行。null なら出さない */
+  pullOverview?: { number: number; isOpen: boolean; onOpen: () => void } | null;
   onSelectDiffFile: (path: string) => void;
   /** どのタブから開いたかは、プレビューの既定モードの判断に使われる */
   onOpenFile: (path: string, from: SidebarTab) => void;
@@ -62,8 +66,10 @@ export function Sidebar({
   browsePath,
   viewedPaths,
   commentCounts,
+  reviewThreadCounts,
   range,
   onRangeChange,
+  pullOverview = null,
   onSelectDiffFile,
   onOpenFile,
   onToggleViewed,
@@ -157,19 +163,45 @@ export function Sidebar({
       {/* overscroll-none: 端まで来ても親へスクロールを伝播させない (横端でのスワイプバックも防ぐ) */}
       <div className="min-h-0 flex-1 overflow-auto overscroll-none">
         {tab === 'changes' ? (
-          diffFiles.length === 0 ? (
-            <Placeholder>No changes</Placeholder>
-          ) : (
-            <FileTree
-              files={diffFiles}
-              folding={folding}
-              selectedPath={browsePath ? null : selectedPath}
-              viewedPaths={viewedPaths}
-              commentCounts={commentCounts}
-              onSelect={onSelectDiffFile}
-              onToggleViewed={onToggleViewed}
-            />
-          )
+          <>
+            {pullOverview && (
+              <button
+                type="button"
+                className={`flex w-full items-center gap-1.5 px-2 py-0.5 text-left text-[13px] leading-6 ${
+                  pullOverview.isOpen
+                    ? 'bg-neutral-200 dark:bg-neutral-700'
+                    : 'hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                }`}
+                title={`Description and conversation of PR #${pullOverview.number}`}
+                onClick={pullOverview.onOpen}
+              >
+                <svg viewBox="0 0 16 16" className="size-4 shrink-0 text-neutral-500 dark:text-neutral-400" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <circle cx="4" cy="3.5" r="1.8" />
+                  <circle cx="4" cy="12.5" r="1.8" />
+                  <circle cx="12" cy="12.5" r="1.8" />
+                  <path d="M4 5.3v5.4" />
+                  <path d="M9 3.5h1.5A1.5 1.5 0 0 1 12 5v5.7" />
+                  <path d="M10.6 1.9 9 3.5l1.6 1.6" />
+                </svg>
+                <span className="whitespace-nowrap">Overview</span>
+                <span className="text-neutral-400 dark:text-neutral-500">#{pullOverview.number}</span>
+              </button>
+            )}
+            {diffFiles.length === 0 ? (
+              <Placeholder>No changes</Placeholder>
+            ) : (
+              <FileTree
+                files={diffFiles}
+                folding={folding}
+                selectedPath={browsePath ? null : selectedPath}
+                viewedPaths={viewedPaths}
+                commentCounts={commentCounts}
+                reviewThreadCounts={reviewThreadCounts}
+                onSelect={onSelectDiffFile}
+                onToggleViewed={onToggleViewed}
+              />
+            )}
+          </>
         ) : tab === 'docs' ? (
           docFiles.isLoading ? (
             <Placeholder>Loading…</Placeholder>

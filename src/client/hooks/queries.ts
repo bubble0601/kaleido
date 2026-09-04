@@ -18,6 +18,16 @@ export function useRanges(isEnabled = true) {
   });
 }
 
+/** PR の本文・会話・行コメント (PR を表示しているときだけ取得) */
+export function usePullDetail(number: number | null) {
+  return useQuery({
+    queryKey: ['pull', number],
+    queryFn: () => api.getPullDetail(number!),
+    enabled: number !== null,
+    staleTime: 60_000,
+  });
+}
+
 /** ルート配下の全ファイル (Files タブ / Quick Open で共有) */
 export function useAllFiles(isEnabled = true) {
   return useQuery({

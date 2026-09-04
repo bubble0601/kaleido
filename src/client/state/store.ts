@@ -64,6 +64,8 @@ interface UiState {
   browsePath: string | null;
   /** ファイルを開いた後にスクロールする位置 (Go to Definition から) */
   pendingReveal: RevealTarget | null;
+  /** PR の概要 (本文・会話) をファイルの代わりに表示しているか */
+  isPullOverviewOpen: boolean;
   viewMode: ViewMode;
   sidebarTab: SidebarTab;
   /** 直近でファイルを開いた経路。プレビューの既定モードを決めるのに使う (タブ以外からなら null) */
@@ -92,6 +94,8 @@ interface UiState {
   setSelectedPath: (path: string | null) => void;
   setBrowsePath: (path: string | null) => void;
   setPendingReveal: (target: RevealTarget | null) => void;
+  /** PR 概要を開く。ファイルを選ぶと閉じる */
+  openPullOverview: () => void;
   setViewMode: (mode: ViewMode) => void;
   setEditorFontSize: (size: number) => void;
   setPreviewFontSize: (size: number) => void;
@@ -108,6 +112,7 @@ export const useUiStore = create<UiState>((set, get) => ({
   selectedPath: null,
   browsePath: null,
   pendingReveal: null,
+  isPullOverviewOpen: false,
   viewMode: 'split',
   sidebarTab: 'changes',
   openedFrom: null,
@@ -127,7 +132,8 @@ export const useUiStore = create<UiState>((set, get) => ({
   themePreference: initialThemePreference,
   theme: resolveTheme(initialThemePreference),
   isSettingsOpen: false,
-  setRange: (range) => set({ range, selectedPath: null, browsePath: null }),
+  setRange: (range) =>
+    set({ range, selectedPath: null, browsePath: null, isPullOverviewOpen: false }),
   setSidebarTab: (sidebarTab) => set({ sidebarTab }),
   setOpenedFrom: (openedFrom) => set({ openedFrom }),
   setPreviewMode: (previewMode) => set({ previewMode }),
@@ -137,9 +143,12 @@ export const useUiStore = create<UiState>((set, get) => ({
   },
   // 保存はプロジェクト (repoId) ごとなので、呼ぶ側で localStorage を扱う
   setDocsRoot: (docsRoot) => set({ docsRoot }),
-  setSelectedPath: (selectedPath) => set({ selectedPath, browsePath: null }),
-  setBrowsePath: (browsePath) => set({ browsePath }),
+  setSelectedPath: (selectedPath) =>
+    set({ selectedPath, browsePath: null, isPullOverviewOpen: false }),
+  setBrowsePath: (browsePath) => set({ browsePath, isPullOverviewOpen: false }),
   setPendingReveal: (pendingReveal) => set({ pendingReveal }),
+  // ファイル選択も外す。URL に path が残らないので、リロード後も概要に戻る
+  openPullOverview: () => set({ isPullOverviewOpen: true, selectedPath: null, browsePath: null }),
   setViewMode: (viewMode) => set({ viewMode }),
   setEditorFontSize: (editorFontSize) => {
     localStorage.setItem(EDITOR_FONT_SIZE_STORAGE_KEY, String(editorFontSize));

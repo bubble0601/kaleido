@@ -110,6 +110,64 @@ export interface PullFetchResponse {
   pull: PullRequestMeta;
 }
 
+export type PullState = 'OPEN' | 'CLOSED' | 'MERGED';
+
+export type ReviewState = 'APPROVED' | 'CHANGES_REQUESTED' | 'COMMENTED' | 'DISMISSED' | 'PENDING';
+
+/** PR の Conversation に並ぶもの: issue コメント、またはレビュー (approve など) の本文 */
+export interface PullConversationItem {
+  id: string;
+  kind: 'comment' | 'review';
+  author: string;
+  /** Markdown */
+  body: string;
+  createdAt: string;
+  url: string;
+  reviewState?: ReviewState;
+}
+
+export interface PullReviewComment {
+  id: string;
+  author: string;
+  /** Markdown */
+  body: string;
+  createdAt: string;
+  url: string;
+}
+
+/** 行に付いたレビューコメントのスレッド */
+export interface PullReviewThread {
+  id: string;
+  path: string;
+  /** GitHub の LEFT (base 側) → original、RIGHT (head 側) → modified */
+  side: CommentSide;
+  /** 現在の head での行番号。コードが変わって追えなくなった (outdated) スレッドでは null */
+  line: number | null;
+  startLine: number | null;
+  /** コメントした時点の行番号 (outdated のときの表示位置に使う) */
+  originalLine: number | null;
+  originalStartLine: number | null;
+  isResolved: boolean;
+  isOutdated: boolean;
+  /** コメント対象の diff の抜粋 (outdated のときに元のコードを見せる) */
+  diffHunk: string;
+  comments: PullReviewComment[];
+}
+
+export interface PullDetail extends PullRequestMeta {
+  /** Markdown */
+  body: string;
+  state: PullState;
+  createdAt: string;
+  headRefOid: string;
+  additions: number;
+  deletions: number;
+  changedFiles: number;
+  /** 作成日時順 */
+  conversation: PullConversationItem[];
+  reviewThreads: PullReviewThread[];
+}
+
 export interface HoverRequest {
   path: string;
   /** 1-based */

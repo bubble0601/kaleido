@@ -4,13 +4,165 @@ import { promisify } from 'node:util';
 import {
   pullRange,
   pullRequestRef,
+  type PullConversationItem,
+  type PullDetail,
   type PullFetchResponse,
   type PullRequestMeta,
+  type PullReviewThread,
+  type PullState,
+  type ReviewState,
 } from '../../shared/types.js';
 
 const execFileAsync = promisify(execFile);
 
 const PR_JSON_FIELDS = 'number,title,headRefName,baseRefName,author,isDraft,url,updatedAt';
+
+/** 本文・会話・行コメントをまとめて引く。件数は first:100 で打ち切る (それ以上は稀) */
+const PR_DETAIL_QUERY = `
+query($owner: String!, $name: String!, $number: Int!) {
+  repository(owner: $owner, name: $name) {
+    pullRequest(number: $number) {
+      number title body state isDraft url createdAt updatedAt
+      baseRefName headRefName headRefOid additions deletions changedFiles
+      author { login }
+      comments(first: 100) {
+        nodes { id author { login } body createdAt url }
+      }
+      reviews(first: 100) {
+        nodes { id author { login } body state createdAt url }
+      }
+      reviewThreads(first: 100) {
+        nodes {
+          id path line startLine originalLine originalStartLine diffSide isResolved isOutdated
+          comments(first: 100) {
+            nodes { id author { login } body createdAt url diffHunk }
+          }
+        }
+      }
+    }
+  }
+}`;
+
+interface GhActor {
+  login: string;
+}
+
+interface GhPullDetail {
+  number: number;
+  title: string;
+  body: string;
+  state: PullState;
+  isDraft: boolean;
+  url: string;
+  createdAt: string;
+  updatedAt: string;
+  baseRefName: string;
+  headRefName: string;
+  headRefOid: string;
+  additions: number;
+  deletions: number;
+  changedFiles: number;
+  author: GhActor | null;
+  comments: { nodes: { id: string; author: GhActor | null; body: string; createdAt: string; url: string }[] };
+  reviews: {
+    nodes: {
+      id: string;
+      author: GhActor | null;
+      body: string;
+      state: ReviewState;
+      createdAt: string;
+      url: string;
+    }[];
+  };
+  reviewThreads: {
+    nodes: {
+      id: string;
+      path: string;
+      line: number | null;
+      startLine: number | null;
+      originalLine: number | null;
+      originalStartLine: number | null;
+      diffSide: 'LEFT' | 'RIGHT';
+      isResolved: boolean;
+      isOutdated: boolean;
+      comments: {
+        nodes: {
+          id: string;
+          author: GhActor | null;
+          body: string;
+          createdAt: string;
+          url: string;
+          diffHunk: string;
+        }[];
+      };
+    }[];
+  };
+}
+
+function toDetail(pr: GhPullDetail): PullDetail {
+  const conversation: PullConversationItem[] = [
+    ...pr.comments.nodes.map((c) => ({
+      id: c.id,
+      kind: 'comment' as const,
+      author: c.author?.login ?? '',
+      body: c.body,
+      createdAt: c.createdAt,
+      url: c.url,
+    })),
+    // 本文のない COMMENTED レビューは行コメントの入れ物でしかないので会話には出さない
+    ...pr.reviews.nodes
+      .filter((r) => r.body.trim().length > 0 || r.state === 'APPROVED' || r.state === 'CHANGES_REQUESTED')
+      .map((r) => ({
+        id: r.id,
+        kind: 'review' as const,
+        author: r.author?.login ?? '',
+        body: r.body,
+        createdAt: r.createdAt,
+        url: r.url,
+        reviewState: r.state,
+      })),
+  ].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+
+  const reviewThreads: PullReviewThread[] = pr.reviewThreads.nodes.map((t) => ({
+    id: t.id,
+    path: t.path,
+    side: t.diffSide === 'LEFT' ? 'original' : 'modified',
+    line: t.line,
+    startLine: t.startLine,
+    originalLine: t.originalLine,
+    originalStartLine: t.originalStartLine,
+    isResolved: t.isResolved,
+    isOutdated: t.isOutdated,
+    diffHunk: t.comments.nodes[0]?.diffHunk ?? '',
+    comments: t.comments.nodes.map((c) => ({
+      id: c.id,
+      author: c.author?.login ?? '',
+      body: c.body,
+      createdAt: c.createdAt,
+      url: c.url,
+    })),
+  }));
+
+  return {
+    number: pr.number,
+    title: pr.title,
+    headRefName: pr.headRefName,
+    baseRefName: pr.baseRefName,
+    author: pr.author?.login ?? '',
+    isDraft: pr.isDraft,
+    url: pr.url,
+    updatedAt: pr.updatedAt,
+    body: pr.body,
+    state: pr.state,
+    createdAt: pr.createdAt,
+    headRefOid: pr.headRefOid,
+    additions: pr.additions,
+    deletions: pr.deletions,
+    changedFiles: pr.changedFiles,
+    conversation,
+    reviewThreads,
+  };
+}
 
 /** gh の --json 出力 (必要なフィールドのみ) */
 interface GhPullRequest {
@@ -101,6 +253,47 @@ export class GitPulls {
     } catch (error) {
       if (isEnoent(error)) {
         throw new Error('GitHub CLI (gh) is required to open pull requests: https://cli.github.com/');
+      }
+      throw new Error(`Could not read PR #${number}: ${stderrOf(error)}`);
+    }
+  }
+
+  private nameWithOwner: string | null = null;
+
+  /** origin が指す GitHub リポジトリの owner/name (gh が解決する)。一度引いたら使い回す */
+  private async getNameWithOwner(): Promise<{ owner: string; name: string }> {
+    if (this.nameWithOwner === null) {
+      const out = await this.gh(['repo', 'view', '--json', 'nameWithOwner', '--jq', '.nameWithOwner']);
+      this.nameWithOwner = out.trim();
+    }
+    const [owner, name] = this.nameWithOwner.split('/');
+    if (!owner || !name) throw new Error(`Unexpected repository name: ${this.nameWithOwner}`);
+    return { owner, name };
+  }
+
+  /** PR の本文・会話 (issue コメント / レビュー)・行コメントのスレッド */
+  async detail(number: number): Promise<PullDetail> {
+    try {
+      const { owner, name } = await this.getNameWithOwner();
+      const out = await this.gh([
+        'api',
+        'graphql',
+        '-F',
+        `owner=${owner}`,
+        '-F',
+        `name=${name}`,
+        '-F',
+        `number=${number}`,
+        '-f',
+        `query=${PR_DETAIL_QUERY}`,
+      ]);
+      const parsed: { data?: { repository?: { pullRequest?: GhPullDetail | null } } } = JSON.parse(out);
+      const pr = parsed.data?.repository?.pullRequest;
+      if (!pr) throw new Error('not found');
+      return toDetail(pr);
+    } catch (error) {
+      if (isEnoent(error)) {
+        throw new Error('GitHub CLI (gh) is required to read pull requests: https://cli.github.com/');
       }
       throw new Error(`Could not read PR #${number}: ${stderrOf(error)}`);
     }

@@ -64,6 +64,7 @@ PR の表示には [GitHub CLI](https://cli.github.com/) (`gh`、ログイン済
 - **型情報と診断**: hover / 型エラー / 定義ジャンプ / 参照検索と、プロジェクトの eslint による行マーカー
 - **レビュー** (git のみ): 比較範囲の切替、内容ハッシュで残るレビュー済みマーク、行/範囲コメント。状態はサーバー側にファイル保存されるのでブラウザを変えても消えない
 - **Pull request** (GitHub のみ): 範囲セレクタに open な PR が並び、選ぶと最新の head を fetch して base ブランチとの merge-base 比較で開く。コメントは PR 単位で残る。セレクタの横から PR ページと github.dev を開ける
+  - Changes の先頭の **Overview** で PR の本文と会話 (コメント・approve など) を読める。GitHub 上の行コメントはエディタ内の該当行に読み取り専用で表示され、ファイル一覧にも件数が出る
 - **設定**: 歯車から配色 (既定は OS 追従) と文字サイズ、ライセンス表記
 
 ![型情報のホバーと行コメント](docs/kaleido-demo-hover-comment.gif)

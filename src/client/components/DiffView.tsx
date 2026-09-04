@@ -7,6 +7,7 @@ import {
   type Diagnostic,
   type DiffFileMeta,
   type FileContentResponse,
+  type PullReviewThread,
   type RangeSpec,
 } from '../../shared/types';
 import { setDiagnosticMarkers } from '../monaco/markers';
@@ -21,6 +22,7 @@ import {
 import { anchorComment } from '../utils/commentAnchor';
 import { EditorZones, type ZoneItem } from './comments/EditorZones';
 import { CommentCard, CommentForm } from './comments/CommentWidgets';
+import { ReviewThreadCard } from './pull/ReviewThreadCard';
 
 type IDiffEditor = import('monaco-editor/editor/editor.api.js').editor.IStandaloneDiffEditor;
 type IStandaloneEditor = import('monaco-editor/editor/editor.api.js').editor.IStandaloneCodeEditor;
@@ -53,6 +55,8 @@ interface DiffViewProps {
   viewMode: ViewMode;
   diagnostics?: Diagnostic[];
   comments: Comment[];
+  /** GitHub 上のレビューコメント (PR 表示中のみ)。読み取り専用で行に添える */
+  reviewThreads?: PullReviewThread[];
   /** Go to Definition などで開いた後にスクロールする位置 */
   pendingReveal?: RevealTarget | null;
   /** fold all / unfold all の対象エディタ (diff は左右両方) を親へ通知 */
@@ -135,6 +139,7 @@ export function DiffView({
   viewMode,
   diagnostics,
   comments,
+  reviewThreads = [],
   pendingReveal,
   onFoldTargetsChange,
   isEditable = false,
@@ -337,6 +342,18 @@ export function DiffView({
         };
       });
 
+    // outdated なスレッドは現在の行が分からないので、コメント時点の行に出す
+    for (const thread of reviewThreads) {
+      if (thread.path !== file.path || thread.side !== side) continue;
+      const line = thread.line ?? thread.originalLine;
+      if (line === null) continue;
+      items.push({
+        key: `thread:${thread.id}`,
+        afterLineNumber: Math.min(line, model.getLineCount()),
+        element: <ReviewThreadCard thread={thread} />,
+      });
+    }
+
     if (draft && draft.side === side) {
       items.push({
         key: 'draft',
@@ -362,12 +379,12 @@ export function DiffView({
   const modifiedZoneItems = useMemo(
     () => buildZoneItems('modified'),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [comments, draft, file, contents, placeholderMessage, onCreateComment, onUpdateComment, onDeleteComment],
+    [comments, reviewThreads, draft, file, contents, placeholderMessage, onCreateComment, onUpdateComment, onDeleteComment],
   );
   const originalZoneItems = useMemo(
     () => buildZoneItems('original'),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [comments, draft, file, contents, placeholderMessage, onCreateComment, onUpdateComment, onDeleteComment],
+    [comments, reviewThreads, draft, file, contents, placeholderMessage, onCreateComment, onUpdateComment, onDeleteComment],
   );
 
   return (
