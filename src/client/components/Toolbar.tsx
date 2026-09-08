@@ -1,3 +1,6 @@
+import { useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+
 import { useUiStore, type ViewMode } from '../state/store';
 
 const MODES: { mode: ViewMode; label: string; icon: React.ReactNode }[] = [
@@ -34,9 +37,6 @@ const MODES: { mode: ViewMode; label: string; icon: React.ReactNode }[] = [
     ),
   },
 ];
-
-const BUTTON_CLASS =
-  'rounded border border-neutral-300 bg-white px-2.5 py-1 text-xs text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700';
 
 interface ToolbarProps {
   isSidebarCollapsed?: boolean;
@@ -78,6 +78,16 @@ export function Toolbar({
   children,
 }: ToolbarProps) {
   const setSettingsOpen = useUiStore((state) => state.setSettingsOpen);
+  const queryClient = useQueryClient();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const refresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await queryClient.invalidateQueries();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
   return (
     <div className="flex h-10 shrink-0 items-center gap-3 border-b border-neutral-200 bg-neutral-100 px-3 dark:border-neutral-800 dark:bg-neutral-900">
       {onToggleSidebar && (
@@ -125,6 +135,28 @@ export function Toolbar({
         ))}
       </div>
       )}
+      <button
+        type="button"
+        className="rounded p-1 text-neutral-500 hover:bg-neutral-200 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-700"
+        title="Refresh"
+        aria-label="Refresh"
+        disabled={isRefreshing}
+        onClick={() => void refresh()}
+      >
+        <svg
+          viewBox="0 0 16 16"
+          className={`size-4 ${isRefreshing ? 'animate-spin' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <path d="M14 8a6 6 0 1 1-6-6c1.68 0 3.29.71 4.49 1.83L14 5.33" />
+          <path d="M14 2v3.33h-3.33" />
+        </svg>
+      </button>
       <button
         type="button"
         className="rounded p-1 text-neutral-500 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:bg-neutral-700"
