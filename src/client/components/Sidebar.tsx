@@ -56,7 +56,7 @@ interface SidebarProps {
   onSelectDiffFile: (path: string) => void;
   /** どのタブから開いたかは、プレビューの既定モードの判断に使われる */
   onOpenFile: (path: string, from: SidebarTab) => void;
-  onToggleViewed: (file: DiffFileMeta, isViewed: boolean) => void;
+  onToggleViewed: (files: DiffFileMeta[], isViewed: boolean) => void;
 }
 
 export function Sidebar({

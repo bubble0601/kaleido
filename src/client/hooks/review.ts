@@ -38,8 +38,11 @@ export function useViewed() {
   const query = useQuery({ queryKey: ['viewed'], queryFn: api.getViewed });
 
   const toggle = useMutation({
-    mutationFn: (params: { file: DiffFileMeta; isViewed: boolean }) =>
-      api.setViewed(params.file.path, params.file.contentHash, params.isViewed),
+    mutationFn: (params: { files: DiffFileMeta[]; isViewed: boolean }) =>
+      api.setViewed(
+        params.files.map((file) => ({ path: file.path, hash: file.contentHash })),
+        params.isViewed,
+      ),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['viewed'] }),
   });
 

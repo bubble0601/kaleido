@@ -146,10 +146,10 @@ export const api = {
 
   getViewed: () => request<ViewedState>('/api/viewed'),
 
-  setViewed: (path: string, hash: string, isViewed: boolean) =>
+  setViewed: (files: { path: string; hash: string }[], isViewed: boolean) =>
     request<{ ok: boolean }>('/api/viewed', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path, hash, viewed: isViewed }),
+      body: JSON.stringify({ files, viewed: isViewed }),
     }),
 };

@@ -104,6 +104,7 @@ function buildTree<T extends FileTreeEntry>(files: T[], sort: TreeSort): TreeNod
 export interface TreeFolding {
   isDirOpen: (path: string) => boolean;
   toggleDir: (path: string) => void;
+  setDirOpen: (path: string, isOpen: boolean) => void;
   /** 既定で開いた状態か。ボタンの向きの判定に使う */
   isExpandedByDefault: boolean;
   collapseAll: () => void;
@@ -149,6 +150,10 @@ export function useTreeFolding(
       setOverrides((prev) => ({ ...prev, [path]: !(prev[path] ?? isExpandedByDefault) })),
     [isExpandedByDefault],
   );
+  const setDirOpen = useCallback(
+    (path: string, isOpen: boolean) => setOverrides((prev) => ({ ...prev, [path]: isOpen })),
+    [],
+  );
   const collapseAll = useCallback(() => {
     setIsExpandedByDefault(false);
     setOverrides({});
@@ -158,7 +163,7 @@ export function useTreeFolding(
     setOverrides({});
   }, []);
 
-  return { isDirOpen, toggleDir, isExpandedByDefault, collapseAll, expandAll };
+  return { isDirOpen, toggleDir, setDirOpen, isExpandedByDefault, collapseAll, expandAll };
 }
 
 interface FileTreeProps<T extends FileTreeEntry> {
@@ -172,7 +177,8 @@ interface FileTreeProps<T extends FileTreeEntry> {
   /** path → GitHub 上のレビュースレッド数 (PR 表示中のみ) */
   reviewThreadCounts?: Map<string, number>;
   onSelect: (path: string) => void;
-  onToggleViewed?: (file: T, isViewed: boolean) => void;
+  /** 複数渡されるのはディレクトリごと切り替えたとき */
+  onToggleViewed?: (files: T[], isViewed: boolean) => void;
   /** 並び順。既定は名前順 */
   sort?: TreeSort;
 }
@@ -207,7 +213,7 @@ interface TreeContext<T> {
   commentCounts?: Map<string, number>;
   reviewThreadCounts?: Map<string, number>;
   onSelect: (path: string) => void;
-  onToggleViewed?: (file: T, isViewed: boolean) => void;
+  onToggleViewed?: (files: T[], isViewed: boolean) => void;
 }
 
 function TreeLevel<T extends FileTreeEntry>({
@@ -264,6 +270,12 @@ function ChevronIcon({ isOpen }: { isOpen: boolean }) {
   );
 }
 
+function collectFiles<T extends FileTreeEntry>(node: TreeDir<T>): T[] {
+  return node.children.flatMap((child) =>
+    child.kind === 'file' ? [child.file] : collectFiles(child),
+  );
+}
+
 function DirRow<T extends FileTreeEntry>({
   node,
   depth,
@@ -273,19 +285,44 @@ function DirRow<T extends FileTreeEntry>({
   depth: number;
   ctx: TreeContext<T>;
 }) {
-  const isOpen = ctx.folding.isDirOpen(node.path);
+  const { folding, viewedPaths, onToggleViewed } = ctx;
+  const isOpen = folding.isDirOpen(node.path);
+  const files = useMemo(() => collectFiles(node), [node]);
+  const viewedCount = files.filter((file) => viewedPaths?.has(file.path)).length;
+  const isAllViewed = files.length > 0 && viewedCount === files.length;
   return (
     <div>
-      <button
-        type="button"
-        className="flex w-full items-center gap-1 px-2 text-left text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+      <div
+        className="flex w-full items-center gap-1.5 pr-2 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
-        onClick={() => ctx.folding.toggleDir(node.path)}
       >
-        <ChevronIcon isOpen={isOpen} />
-        <Icon icon={isOpen ? FOLDER_OPENED_ICON : FOLDER_ICON} className="size-4 shrink-0" aria-hidden />
-        <span className="whitespace-nowrap">{node.name}</span>
-      </button>
+        {onToggleViewed && (
+          <input
+            type="checkbox"
+            checked={isAllViewed}
+            // 一部だけ既読なら中間状態にする (DOM プロパティなので ref で設定)
+            ref={(el) => {
+              if (el) el.indeterminate = viewedCount > 0 && !isAllViewed;
+            }}
+            className="shrink-0 accent-neutral-500"
+            title="Mark all files in this folder as viewed"
+            onChange={(e) => {
+              onToggleViewed(files, e.target.checked);
+              // 既読にしたフォルダは畳み、未読に戻したら開く
+              folding.setDirOpen(node.path, !e.target.checked);
+            }}
+          />
+        )}
+        <button
+          type="button"
+          className="flex min-w-0 flex-1 items-center gap-1 text-left"
+          onClick={() => folding.toggleDir(node.path)}
+        >
+          <ChevronIcon isOpen={isOpen} />
+          <Icon icon={isOpen ? FOLDER_OPENED_ICON : FOLDER_ICON} className="size-4 shrink-0" aria-hidden />
+          <span className="whitespace-nowrap">{node.name}</span>
+        </button>
+      </div>
       {isOpen && <TreeLevel nodes={node.children} depth={depth + 1} ctx={ctx} />}
     </div>
   );
@@ -326,7 +363,7 @@ function FileRow<T extends FileTreeEntry>({
           className="shrink-0 accent-neutral-500"
           title="Mark as viewed"
           onClick={(e) => e.stopPropagation()}
-          onChange={(e) => onToggleViewed(file, e.target.checked)}
+          onChange={(e) => onToggleViewed([file], e.target.checked)}
         />
       )}
       <Icon icon={getFileTypeIconName(file.path)} className="size-4 shrink-0" aria-hidden />

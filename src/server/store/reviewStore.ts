@@ -72,12 +72,15 @@ export class ReviewStore {
     return { entries: data.entries };
   }
 
-  setViewed(path: string, hash: string, isViewed: boolean): void {
+  setViewed(files: { path: string; hash: string }[], isViewed: boolean): void {
     const state = this.getViewed();
-    if (isViewed) {
-      state.entries[path] = { hash, viewedAt: new Date().toISOString() };
-    } else {
-      delete state.entries[path];
+    const viewedAt = new Date().toISOString();
+    for (const { path, hash } of files) {
+      if (isViewed) {
+        state.entries[path] = { hash, viewedAt };
+      } else {
+        delete state.entries[path];
+      }
     }
     this.writeAtomic(this.viewedPath, { version: STORE_VERSION, entries: state.entries });
   }

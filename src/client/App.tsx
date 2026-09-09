@@ -423,7 +423,7 @@ export function App() {
       if (e.key === 'k') selectNext(-1);
       if (e.key === 'v' && selectedFile) {
         const willBeViewed = !viewedPaths.has(selectedFile.path);
-        toggleViewed.mutate({ file: selectedFile, isViewed: willBeViewed });
+        toggleViewed.mutate({ files: [selectedFile], isViewed: willBeViewed });
         if (willBeViewed) selectNext(1);
       }
     };
@@ -582,7 +582,7 @@ export function App() {
                 setSelectedPath(path);
               }}
               onOpenFile={openFile}
-              onToggleViewed={(file, isViewed) => toggleViewed.mutate({ file, isViewed })}
+              onToggleViewed={(files, isViewed) => toggleViewed.mutate({ files, isViewed })}
             />
           </aside>
         )}

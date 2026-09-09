@@ -427,11 +427,14 @@ export function createApp(ctx: AppContext): Hono {
     '/api/viewed',
     zValidator(
       'json',
-      z.object({ path: z.string().min(1), hash: z.string().min(1), viewed: z.boolean() }),
+      z.object({
+        files: z.array(z.object({ path: z.string().min(1), hash: z.string().min(1) })).min(1),
+        viewed: z.boolean(),
+      }),
     ),
     (c) => {
-      const { path, hash, viewed } = c.req.valid('json');
-      ctx.reviewStore.setViewed(path, hash, viewed);
+      const { files, viewed } = c.req.valid('json');
+      ctx.reviewStore.setViewed(files, viewed);
       return c.json({ ok: true });
     },
   );
