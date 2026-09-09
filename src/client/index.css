@@ -32,21 +32,37 @@ body {
   font-size: var(--kaleido-editor-font-size, 13px);
 }
 
-/* コメント追加用の glyph margin ボタン */
+/* コメント追加用の glyph margin ボタン (hover 中の行にだけ出る) */
 .kaleido-comment-glyph {
+  display: flex;
+  align-items: center;
   cursor: pointer;
 }
 .kaleido-comment-glyph::after {
-  content: '+';
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 100%;
+  /* + はフォントのグリフだと中心がずれるため、線を 2 本引いて描く */
+  content: '';
+  display: block;
+  box-sizing: border-box;
+  width: 15px;
+  height: 15px;
   margin-left: 2px;
-  border-radius: 3px;
-  background: #1f6feb;
-  color: #fff;
-  font-weight: 700;
-  font-size: 12px;
+  border: 1px solid #a3a3a3;
+  border-radius: 4px;
+  background-image:
+    linear-gradient(currentColor, currentColor),
+    linear-gradient(currentColor, currentColor);
+  background-size:
+    7px 1px,
+    1px 7px;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: #737373;
+  transition: transform 100ms cubic-bezier(0.2, 0, 0, 1);
+}
+.kaleido-comment-glyph:active::after {
+  transform: scale(0.96);
+}
+:root.dark .kaleido-comment-glyph::after {
+  border-color: #737373;
+  color: #a3a3a3;
 }
