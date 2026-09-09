@@ -1,6 +1,6 @@
-import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
+import { useRefreshAll } from '../hooks/useRefresh';
 import { useUiStore, type ViewMode } from '../state/store';
 
 const MODES: { mode: ViewMode; label: string; icon: React.ReactNode }[] = [
@@ -78,12 +78,12 @@ export function Toolbar({
   children,
 }: ToolbarProps) {
   const setSettingsOpen = useUiStore((state) => state.setSettingsOpen);
-  const queryClient = useQueryClient();
+  const refreshAll = useRefreshAll();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const refresh = async () => {
     setIsRefreshing(true);
     try {
-      await queryClient.invalidateQueries();
+      await refreshAll();
     } finally {
       setIsRefreshing(false);
     }

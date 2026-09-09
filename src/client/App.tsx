@@ -29,6 +29,7 @@ import { PullOverview } from './components/pull/PullOverview';
 import { api } from './services/api';
 import { computeViewedPaths, useComments, useViewed } from './hooks/review';
 import { useSidebarResize } from './hooks/useSidebarResize';
+import { useRefreshOnVisible } from './hooks/useRefresh';
 import { useSse } from './hooks/useSse';
 import { monaco } from './monaco/setup';
 import { MarkdownPreview } from './components/MarkdownPreview';
@@ -79,6 +80,7 @@ export function App() {
   const queryClient = useQueryClient();
   const meta = useMeta();
   useSse();
+  useRefreshOnVisible();
   const {
     range,
     selectedPath,
