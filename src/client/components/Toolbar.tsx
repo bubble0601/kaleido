@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useIsFetching } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 
 import { useRefreshAll } from '../hooks/useRefresh';
 import { useUiStore, type ViewMode } from '../state/store';
@@ -79,15 +80,18 @@ export function Toolbar({
 }: ToolbarProps) {
   const setSettingsOpen = useUiStore((state) => state.setSettingsOpen);
   const refreshAll = useRefreshAll();
+  const isFetching = useIsFetching() > 0;
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const refresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await refreshAll();
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
+  /*
+   * invalidateQueries の Promise は、再取得中に別の invalidate (SSE など) が
+   * 割り込むと解決しないことがある。実際の取得状況で回転を止める。
+   * 取得が途切れた直後に次が始まることがあるため、少し待ってから止める。
+   */
+  useEffect(() => {
+    if (!isRefreshing || isFetching) return;
+    const timer = setTimeout(() => setIsRefreshing(false), 300);
+    return () => clearTimeout(timer);
+  }, [isRefreshing, isFetching]);
   return (
     <div className="flex h-10 shrink-0 items-center gap-3 border-b border-neutral-200 bg-neutral-100 px-3 dark:border-neutral-800 dark:bg-neutral-900">
       {onToggleSidebar && (
@@ -113,6 +117,30 @@ export function Toolbar({
           </svg>
         </button>
       )}
+      <button
+        type="button"
+        className="rounded p-1 text-neutral-500 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:bg-neutral-700"
+        title="Refresh"
+        aria-label="Refresh"
+        onClick={() => {
+          setIsRefreshing(true);
+          void refreshAll();
+        }}
+      >
+        <svg
+          viewBox="0 0 16 16"
+          className={`size-4 ${isRefreshing ? 'animate-spin' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <path d="M14 8a6 6 0 1 1-6-6c1.68 0 3.29.71 4.49 1.83L14 5.33" />
+          <path d="M14 2v3.33h-3.33" />
+        </svg>
+      </button>
       <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">kaleido</span>
       <div className="flex-1" />
       {children}
@@ -135,28 +163,6 @@ export function Toolbar({
         ))}
       </div>
       )}
-      <button
-        type="button"
-        className="rounded p-1 text-neutral-500 hover:bg-neutral-200 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-700"
-        title="Refresh"
-        aria-label="Refresh"
-        disabled={isRefreshing}
-        onClick={() => void refresh()}
-      >
-        <svg
-          viewBox="0 0 16 16"
-          className={`size-4 ${isRefreshing ? 'animate-spin' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
-        >
-          <path d="M14 8a6 6 0 1 1-6-6c1.68 0 3.29.71 4.49 1.83L14 5.33" />
-          <path d="M14 2v3.33h-3.33" />
-        </svg>
-      </button>
       <button
         type="button"
         className="rounded p-1 text-neutral-500 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:bg-neutral-700"
