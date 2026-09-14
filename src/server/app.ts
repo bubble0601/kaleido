@@ -31,6 +31,12 @@ const IMAGE_CONTENT_TYPES: Record<string, string> = {
   '.svg': 'image/svg+xml',
 };
 
+/** /api/raw で配信を許可する Content-Type (画像と PDF) */
+const RAW_CONTENT_TYPES: Record<string, string> = {
+  ...IMAGE_CONTENT_TYPES,
+  '.pdf': 'application/pdf',
+};
+
 /** /preview で配信する Content-Type。不明な拡張子は octet-stream にして実行させない */
 const PREVIEW_CONTENT_TYPES: Record<string, string> = {
   ...IMAGE_CONTENT_TYPES,
@@ -294,26 +300,30 @@ export function createApp(ctx: AppContext): Hono {
     },
   );
 
-  // Markdown プレビューから参照される画像。
+  // Markdown プレビューから参照される画像と、PDF プレビューの中身。
   // HTML など実行され得る型は返さない (同一オリジンで配信するため)
   app.get(
     '/api/raw',
     zValidator('query', z.object({ path: z.string().min(1) })),
     async (c) => {
       const { path } = c.req.valid('query');
-      const contentType = IMAGE_CONTENT_TYPES[extensionOf(path)];
+      const contentType = RAW_CONTENT_TYPES[extensionOf(path)];
       if (!contentType) return c.json({ error: 'Unsupported file type' }, 415);
+      const isPdf = contentType === 'application/pdf';
       let buf: Buffer;
       try {
         buf = await ctx.fileContent.readBlob('working', path);
       } catch {
         return c.json({ error: 'File not found' }, 404);
       }
-      if (buf.length > MAX_RAW_BYTES) return c.json({ error: 'File too large' }, 413);
+      if (buf.length > (isPdf ? MAX_PREVIEW_BYTES : MAX_RAW_BYTES)) {
+        return c.json({ error: 'File too large' }, 413);
+      }
       return c.body(new Uint8Array(buf), 200, {
         'Content-Type': contentType,
         'X-Content-Type-Options': 'nosniff',
-        'Content-Security-Policy': "default-src 'none'; sandbox",
+        // sandbox を付けるとブラウザ内蔵の PDF ビューアが開けないため、PDF では外す
+        'Content-Security-Policy': isPdf ? "default-src 'none'" : "default-src 'none'; sandbox",
         'Cache-Control': 'no-cache',
       });
     },

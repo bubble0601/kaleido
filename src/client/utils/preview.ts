@@ -1,12 +1,13 @@
-import { HTML_EXTENSIONS, MARKDOWN_EXTENSIONS } from '../../shared/documents';
+import { HTML_EXTENSIONS, MARKDOWN_EXTENSIONS, PDF_EXTENSIONS } from '../../shared/documents';
 
 /** レンダリング結果を表示できるファイル種別 */
-export type PreviewKind = 'markdown' | 'html';
+export type PreviewKind = 'markdown' | 'html' | 'pdf';
 
 export function getPreviewKind(path: string): PreviewKind | null {
   const lower = path.toLowerCase();
   if (MARKDOWN_EXTENSIONS.some((ext) => lower.endsWith(ext))) return 'markdown';
   if (HTML_EXTENSIONS.some((ext) => lower.endsWith(ext))) return 'html';
+  if (PDF_EXTENSIONS.some((ext) => lower.endsWith(ext))) return 'pdf';
   return null;
 }
 

@@ -20,6 +20,7 @@ import {
   BROWSE_RANGE,
   isBrowseRange,
   isFileLevelComment,
+  isWorkingTreeRange,
   pullNumberOfRef,
   type Comment,
   type PullReviewThread,
@@ -34,7 +35,9 @@ import { useSse } from './hooks/useSse';
 import { monaco } from './monaco/setup';
 import { MarkdownPreview } from './components/MarkdownPreview';
 import { contentVersion, HtmlPreview } from './components/HtmlPreview';
+import { PdfPreview } from './components/PdfPreview';
 import { getPreviewKind } from './utils/preview';
+import { isPdfPath } from '../shared/documents';
 import { CopyButton } from './components/CopyButton';
 import { SettingsDialog } from './components/SettingsDialog';
 import { SYSTEM_DARK_QUERY, useUiStore, type PreviewMode, type SidebarTab } from './state/store';
@@ -188,7 +191,7 @@ export function App() {
         status: 'added',
         additions: 0,
         deletions: 0,
-        isBinary: false,
+        isBinary: isPdfPath(browsePath),
         contentHash: `browse:${browsePath}`,
       } satisfies (typeof files)[number];
     }
@@ -312,7 +315,15 @@ export function App() {
   // HTML は working tree のファイルをサーバーから配信して見せるため、
   // 過去のコミットの内容を見ているときはプレビューを出さない (ソースと食い違うため)
   const fileKind = selectedFile ? getPreviewKind(selectedFile.path) : null;
-  const previewKind = fileKind === 'html' && !isEditable ? null : fileKind;
+  /*
+   * HTML / PDF は working tree のファイルをサーバーから配信して見せるため、
+   * 過去のコミットの内容を見ているときはプレビューを出さない (中身と食い違うため)。
+   * PDF はテキストを持たないので isEditable を使えず、範囲そのもので判断する。
+   */
+  const previewKind =
+    (fileKind === 'html' && !isEditable) || (fileKind === 'pdf' && !isWorkingTreeRange(contentRange))
+      ? null
+      : fileKind;
   useEffect(() => setPreviewMode(null), [selectedPath, browsePath, setPreviewMode]);
   const defaultPreviewMode: PreviewMode =
     openedFrom === 'changes'
@@ -323,7 +334,7 @@ export function App() {
           ? 'preview'
           : 'split';
   const effectivePreviewMode: PreviewMode =
-    previewKind === null ? 'source' : (previewMode ?? defaultPreviewMode);
+    previewKind === null ? 'source' : previewKind === 'pdf' ? 'preview' : (previewMode ?? defaultPreviewMode);
   const previewContent = liveContent ?? contents.data?.modified?.content ?? '';
   const saveFile = useCallback(async () => {
     const editor = editTargetRef.current;
@@ -623,7 +634,7 @@ export function App() {
                   </svg>
                 </button>
               )}
-              {previewKind && (
+              {previewKind && previewKind !== 'pdf' && (
                 <div className="flex shrink-0 overflow-hidden rounded border border-neutral-300 dark:border-neutral-700">
                   {PREVIEW_MODES.map(({ mode, label, icon }) => (
                     <button
@@ -737,7 +748,9 @@ export function App() {
             )}
             {effectivePreviewMode !== 'source' && (
               <div className="min-w-0 flex-1 border-l border-neutral-200 dark:border-neutral-800">
-                {previewKind === 'html' ? (
+                {previewKind === 'pdf' ? (
+                  <PdfPreview path={selectedFile.path} />
+                ) : previewKind === 'html' ? (
                   <HtmlPreview
                     path={selectedFile.path}
                     version={contentVersion(contents.data?.modified?.content ?? '')}

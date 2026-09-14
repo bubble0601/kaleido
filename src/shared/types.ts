@@ -23,6 +23,17 @@ export function isBrowseRange(range: RangeSpec | null): boolean {
   return range?.target === 'browse';
 }
 
+/** target が working tree の内容を指すか (ディスク上のファイルをそのまま扱えるか) */
+export function isWorkingTreeRange(range: RangeSpec | null): boolean {
+  if (!range) return false;
+  return (
+    range.target === 'working' ||
+    range.target === 'staged' ||
+    range.target === '.' ||
+    range.target === 'browse'
+  );
+}
+
 export type FileStatus = 'added' | 'deleted' | 'modified' | 'renamed';
 
 export interface DiffFileMeta {
