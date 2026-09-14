@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { useUiStore, type CopyPathMode } from '../state/store';
+import { ChevronDownIcon } from './ChevronDownIcon';
 
 interface CopyPathButtonProps {
   /** ルート相対のファイルパス */
@@ -23,7 +24,7 @@ function textOf(mode: CopyPathMode, path: string, rootDir: string | null): strin
 
 /**
  * ファイルのパスをコピーする。
- * 本体は直近に選んだ形式でコピーし、隣の ▾ で形式を選び直せる (選ぶとそのままコピーする)。
+ * 本体は直近に選んだ形式でコピーし、隣の chevron で形式を選び直せる (選ぶとそのままコピーする)。
  */
 export function CopyPathButton({ path, rootDir }: CopyPathButtonProps) {
   const mode = useUiStore((state) => state.copyPathMode);
@@ -96,7 +97,7 @@ export function CopyPathButton({ path, rootDir }: CopyPathButtonProps) {
         aria-expanded={isOpen}
         onClick={() => setIsOpen(!isOpen)}
       >
-        ▾
+        <ChevronDownIcon />
       </button>
       {isOpen && (
         <div className="absolute left-0 top-7 z-50 w-72 max-w-[calc(100vw-5rem)] rounded border border-neutral-300 bg-white py-1 shadow-xl dark:border-neutral-700 dark:bg-neutral-900">

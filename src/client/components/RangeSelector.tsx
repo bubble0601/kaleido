@@ -10,6 +10,7 @@ import {
 } from '../../shared/types';
 import { useRanges } from '../hooks/queries';
 import { api } from '../services/api';
+import { ChevronDownIcon } from './ChevronDownIcon';
 
 interface RangeOption {
   label: string;
@@ -141,7 +142,7 @@ export function RangeSelector({ current, onChange }: RangeSelectorProps) {
             </span>
           )}
         </span>
-        <span className="shrink-0 text-[10px]">▾</span>
+        <ChevronDownIcon />
       </button>
       {pullLinks && (
         <>

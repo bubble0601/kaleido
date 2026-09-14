@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { ChevronDownIcon } from './ChevronDownIcon';
+
 export interface DocsRootOption {
   /** ルート相対のディレクトリ。空文字はルート全体 */
   path: string;
@@ -94,7 +96,7 @@ export function DocsRootSelector({ current, options, onChange }: DocsRootSelecto
           <path d="M1.5 12.5v-9a1 1 0 0 1 1-1h3l1.5 2h6a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-10a1 1 0 0 1-1-1z" />
         </svg>
         <span className="min-w-0 flex-1 truncate text-left font-mono">{current || ROOT_LABEL}</span>
-        <span className="shrink-0 text-[10px]">▾</span>
+        <ChevronDownIcon />
       </button>
       {isOpen && (
         <div className="absolute left-0 top-7 z-50 w-80 max-w-[calc(100vw-5rem)] rounded border border-neutral-300 bg-white shadow-xl dark:border-neutral-700 dark:bg-neutral-900">
