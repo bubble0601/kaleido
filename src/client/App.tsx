@@ -38,7 +38,7 @@ import { contentVersion, HtmlPreview } from './components/HtmlPreview';
 import { PdfPreview } from './components/PdfPreview';
 import { getPreviewKind } from './utils/preview';
 import { isPdfPath } from '../shared/documents';
-import { CopyButton } from './components/CopyButton';
+import { CopyPathButton } from './components/CopyPathButton';
 import { SettingsDialog } from './components/SettingsDialog';
 import { SYSTEM_DARK_QUERY, useUiStore, type PreviewMode, type SidebarTab } from './state/store';
 import { setFileOpenHandler } from './monaco/navigation';
@@ -612,7 +612,7 @@ export function App() {
               <span className="truncate font-mono text-neutral-600 dark:text-neutral-300" title={selectedFile.path}>
                 {selectedFile.path}
               </span>
-              <CopyButton text={basename(selectedFile.path)} title="Copy file name" />
+              <CopyPathButton path={selectedFile.path} rootDir={meta.data?.rootDir ?? null} />
               {isDirty && (
                 <span className="shrink-0 text-yellow-500" title="Unsaved changes">
                   ●
@@ -782,10 +782,6 @@ export function App() {
       </div>
     </div>
   );
-}
-
-function basename(path: string): string {
-  return path.slice(path.lastIndexOf('/') + 1);
 }
 
 function Centered({ children }: { children: React.ReactNode }) {

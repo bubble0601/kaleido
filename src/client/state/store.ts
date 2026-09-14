@@ -19,11 +19,20 @@ export type SidebarTab = 'changes' | 'files' | 'docs';
 export type PreviewMode = 'source' | 'split' | 'preview';
 /** Docs の並び順 */
 export type DocsSort = 'mtime' | 'name';
+/** ファイルパスをコピーするときの形式 */
+export type CopyPathMode = 'name' | 'relative' | 'absolute';
 
 const DOCS_SORT_STORAGE_KEY = 'kaleido-docs-sort';
 
 function getInitialDocsSort(): DocsSort {
   return localStorage.getItem(DOCS_SORT_STORAGE_KEY) === 'name' ? 'name' : 'mtime';
+}
+
+const COPY_PATH_MODE_STORAGE_KEY = 'kaleido-copy-path-mode';
+
+function getInitialCopyPathMode(): CopyPathMode {
+  const saved = localStorage.getItem(COPY_PATH_MODE_STORAGE_KEY);
+  return saved === 'relative' || saved === 'absolute' ? saved : 'name';
 }
 
 const EDITOR_FONT_SIZE_STORAGE_KEY = 'kaleido-editor-font-size';
@@ -76,6 +85,8 @@ interface UiState {
   docsSort: DocsSort;
   /** Docs で基点にするディレクトリ (ルート相対。空文字はルート全体) */
   docsRoot: string;
+  /** ファイル名コピーで直近に選んだ形式 */
+  copyPathMode: CopyPathMode;
   /** エディタ (diff / 単体表示) の文字サイズ (px) */
   editorFontSize: number;
   /** Markdown プレビュー本文の文字サイズ (px) */
@@ -91,6 +102,7 @@ interface UiState {
   setPreviewMode: (mode: PreviewMode | null) => void;
   setDocsSort: (sort: DocsSort) => void;
   setDocsRoot: (root: string) => void;
+  setCopyPathMode: (mode: CopyPathMode) => void;
   setSelectedPath: (path: string | null) => void;
   setBrowsePath: (path: string | null) => void;
   setPendingReveal: (target: RevealTarget | null) => void;
@@ -119,6 +131,7 @@ export const useUiStore = create<UiState>((set, get) => ({
   previewMode: null,
   docsSort: getInitialDocsSort(),
   docsRoot: '',
+  copyPathMode: getInitialCopyPathMode(),
   editorFontSize: getInitialFontSize(
     EDITOR_FONT_SIZE_STORAGE_KEY,
     EDITOR_FONT_SIZES,
@@ -143,6 +156,10 @@ export const useUiStore = create<UiState>((set, get) => ({
   },
   // 保存はプロジェクト (repoId) ごとなので、呼ぶ側で localStorage を扱う
   setDocsRoot: (docsRoot) => set({ docsRoot }),
+  setCopyPathMode: (copyPathMode) => {
+    localStorage.setItem(COPY_PATH_MODE_STORAGE_KEY, copyPathMode);
+    set({ copyPathMode });
+  },
   setSelectedPath: (selectedPath) =>
     set({ selectedPath, browsePath: null, isPullOverviewOpen: false }),
   setBrowsePath: (browsePath) => set({ browsePath, isPullOverviewOpen: false }),
