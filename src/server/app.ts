@@ -13,8 +13,9 @@ import {
 import type { AppContext } from './context.js';
 import { applyExcludes, listDirectoryFiles, listDocumentFiles } from './files/tree.js';
 import { IMAGE_CONTENT_TYPES } from '../shared/documents.js';
+import packageJson from '../../package.json' with { type: 'json' };
 
-const VERSION = '0.1.0';
+const VERSION = packageJson.version;
 
 const MAX_RAW_BYTES = 10 * 1024 * 1024;
 const MAX_PREVIEW_BYTES = 20 * 1024 * 1024;
