@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- 画像 (png / jpg / gif / webp / avif / bmp / ico / svg) をそのまま表示できるようにした。SVG はテキストなので差分とソースも従来どおり見られる
+
 ## 0.3.0 (2026-09-14)
 
 ### Added

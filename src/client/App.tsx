@@ -36,8 +36,9 @@ import { monaco } from './monaco/setup';
 import { MarkdownPreview } from './components/MarkdownPreview';
 import { contentVersion, HtmlPreview } from './components/HtmlPreview';
 import { PdfPreview } from './components/PdfPreview';
+import { ImagePreview } from './components/ImagePreview';
 import { getPreviewKind } from './utils/preview';
-import { isPdfPath } from '../shared/documents';
+import { isPreviewOnlyPath } from '../shared/documents';
 import { CopyPathButton } from './components/CopyPathButton';
 import { SettingsDialog } from './components/SettingsDialog';
 import { SYSTEM_DARK_QUERY, useUiStore, type PreviewMode, type SidebarTab } from './state/store';
@@ -191,7 +192,7 @@ export function App() {
         status: 'added',
         additions: 0,
         deletions: 0,
-        isBinary: isPdfPath(browsePath),
+        isBinary: isPreviewOnlyPath(browsePath),
         contentHash: `browse:${browsePath}`,
       } satisfies (typeof files)[number];
     }
@@ -316,14 +317,17 @@ export function App() {
   // 過去のコミットの内容を見ているときはプレビューを出さない (ソースと食い違うため)
   const fileKind = selectedFile ? getPreviewKind(selectedFile.path) : null;
   /*
-   * HTML / PDF は working tree のファイルをサーバーから配信して見せるため、
+   * HTML / PDF / 画像は working tree のファイルをサーバーから配信して見せるため、
    * 過去のコミットの内容を見ているときはプレビューを出さない (中身と食い違うため)。
-   * PDF はテキストを持たないので isEditable を使えず、範囲そのもので判断する。
+   * PDF と画像はテキストを持たないので isEditable を使えず、範囲そのもので判断する。
    */
+  const isServedFromDisk = fileKind === 'pdf' || fileKind === 'image';
   const previewKind =
-    (fileKind === 'html' && !isEditable) || (fileKind === 'pdf' && !isWorkingTreeRange(contentRange))
+    (fileKind === 'html' && !isEditable) || (isServedFromDisk && !isWorkingTreeRange(contentRange))
       ? null
       : fileKind;
+  /** ソースを持たないファイルはプレビューだけを見せる (SVG はテキストなので対象外) */
+  const isPreviewOnly = previewKind !== null && !!selectedFile?.isBinary;
   useEffect(() => setPreviewMode(null), [selectedPath, browsePath, setPreviewMode]);
   const defaultPreviewMode: PreviewMode =
     openedFrom === 'changes'
@@ -334,7 +338,7 @@ export function App() {
           ? 'preview'
           : 'split';
   const effectivePreviewMode: PreviewMode =
-    previewKind === null ? 'source' : previewKind === 'pdf' ? 'preview' : (previewMode ?? defaultPreviewMode);
+    previewKind === null ? 'source' : isPreviewOnly ? 'preview' : (previewMode ?? defaultPreviewMode);
   const previewContent = liveContent ?? contents.data?.modified?.content ?? '';
   const saveFile = useCallback(async () => {
     const editor = editTargetRef.current;
@@ -634,7 +638,7 @@ export function App() {
                   </svg>
                 </button>
               )}
-              {previewKind && previewKind !== 'pdf' && (
+              {previewKind && !isPreviewOnly && (
                 <div className="flex shrink-0 overflow-hidden rounded border border-neutral-300 dark:border-neutral-700">
                   {PREVIEW_MODES.map(({ mode, label, icon }) => (
                     <button
@@ -750,6 +754,8 @@ export function App() {
               <div className="min-w-0 flex-1 border-l border-neutral-200 dark:border-neutral-800">
                 {previewKind === 'pdf' ? (
                   <PdfPreview path={selectedFile.path} />
+                ) : previewKind === 'image' ? (
+                  <ImagePreview path={selectedFile.path} />
                 ) : previewKind === 'html' ? (
                   <HtmlPreview
                     path={selectedFile.path}

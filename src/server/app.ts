@@ -12,24 +12,12 @@ import {
 } from '../shared/types.js';
 import type { AppContext } from './context.js';
 import { applyExcludes, listDirectoryFiles, listDocumentFiles } from './files/tree.js';
+import { IMAGE_CONTENT_TYPES } from '../shared/documents.js';
 
 const VERSION = '0.1.0';
 
 const MAX_RAW_BYTES = 10 * 1024 * 1024;
 const MAX_PREVIEW_BYTES = 20 * 1024 * 1024;
-
-/** /api/raw で配信を許可する拡張子と Content-Type (画像のみ) */
-const IMAGE_CONTENT_TYPES: Record<string, string> = {
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.gif': 'image/gif',
-  '.webp': 'image/webp',
-  '.avif': 'image/avif',
-  '.bmp': 'image/bmp',
-  '.ico': 'image/x-icon',
-  '.svg': 'image/svg+xml',
-};
 
 /** /api/raw で配信を許可する Content-Type (画像と PDF) */
 const RAW_CONTENT_TYPES: Record<string, string> = {
