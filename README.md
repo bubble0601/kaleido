@@ -72,7 +72,8 @@ PR の表示には [GitHub CLI](https://cli.github.com/) (`gh`、ログイン済
 
 ### ファイル一覧の除外設定
 
-既定で `node_modules` / `.git` / `dist` / `.next` などを除外する。gitignore されたファイルは除外しない。
+既定で `node_modules` / `.git` / `dist` / `.next` などを除外する。
+gitignore されたファイルは一覧に薄く表示し、gitignore されたディレクトリは開いたときに中身を読み込む。
 ルート直下に `.kaleido.json` を置くと上書きできる。
 
 ```json

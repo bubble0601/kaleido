@@ -13,6 +13,8 @@ export interface FileTreeEntry {
   status?: FileStatus;
   /** 更新日時 (epoch ミリ秒)。sort='mtime' のときだけ使う */
   mtime?: number;
+  /** gitignore されているファイルは薄く表示する */
+  isIgnored?: boolean;
 }
 
 interface TreeDir<T> {
@@ -20,6 +22,8 @@ interface TreeDir<T> {
   name: string;
   path: string;
   children: TreeNode<T>[];
+  /** 中身を開いたときに読み込むディレクトリ (gitignore されたもの) */
+  isLazy: boolean;
 }
 
 interface TreeFile<T> {
@@ -39,34 +43,44 @@ const STATUS_STYLE: Record<FileStatus, { letter: string; className: string }> = 
 
 export type TreeSort = 'name' | 'mtime';
 
-function buildTree<T extends FileTreeEntry>(files: T[], sort: TreeSort): TreeNode<T>[] {
-  const root: TreeDir<T> = { kind: 'dir', name: '', path: '', children: [] };
-  for (const file of files) {
-    const segments = file.path.split('/');
+function buildTree<T extends FileTreeEntry>(
+  files: T[],
+  lazyDirs: string[],
+  sort: TreeSort,
+): TreeNode<T>[] {
+  const root: TreeDir<T> = { kind: 'dir', name: '', path: '', children: [], isLazy: false };
+  const ensureDir = (segments: string[]): TreeDir<T> => {
     let dir = root;
-    for (let i = 0; i < segments.length - 1; i++) {
+    for (let i = 0; i < segments.length; i++) {
       const name = segments[i]!;
       const path = segments.slice(0, i + 1).join('/');
       let next = dir.children.find(
         (n): n is TreeDir<T> => n.kind === 'dir' && n.name === name,
       );
       if (!next) {
-        next = { kind: 'dir', name, path, children: [] };
+        next = { kind: 'dir', name, path, children: [], isLazy: false };
         dir.children.push(next);
       }
       dir = next;
     }
-    dir.children.push({ kind: 'file', name: segments[segments.length - 1]!, file });
+    return dir;
+  };
+  for (const path of lazyDirs) ensureDir(path.split('/')).isLazy = true;
+  for (const file of files) {
+    const segments = file.path.split('/');
+    ensureDir(segments.slice(0, -1)).children.push({
+      kind: 'file',
+      name: segments[segments.length - 1]!,
+      file,
+    });
   }
-  // 単一子ディレクトリを畳む (a/b/c → a/b/c 表記)
+  // 単一子ディレクトリを畳む (a/b/c → a/b/c 表記)。
+  // 読み込み前のディレクトリは中身が空なので、まとめると開いても読み込みが始まらない
   const compact = (node: TreeDir<T>): TreeDir<T> => {
     let current = node;
-    while (
-      current.children.length === 1 &&
-      current.children[0]!.kind === 'dir' &&
-      current.name !== ''
-    ) {
-      const only = current.children[0] as TreeDir<T>;
+    while (current.name !== '' && current.children.length === 1) {
+      const only = current.children[0]!;
+      if (only.kind !== 'dir' || only.isLazy) break;
       current = { ...only, name: `${current.name}/${only.name}` };
     }
     return { ...current, children: current.children.map((c) => (c.kind === 'dir' ? compact(c) : c)) };
@@ -103,7 +117,8 @@ function buildTree<T extends FileTreeEntry>(files: T[], sort: TreeSort): TreeNod
 
 export interface TreeFolding {
   isDirOpen: (path: string) => boolean;
-  toggleDir: (path: string) => void;
+  /** 既定値ではなく個別の操作で開かれているか */
+  isDirOpenExplicitly: (path: string) => boolean;
   setDirOpen: (path: string, isOpen: boolean) => void;
   /** 既定で開いた状態か。ボタンの向きの判定に使う */
   isExpandedByDefault: boolean;
@@ -145,11 +160,7 @@ export function useTreeFolding(
     (path: string) => overrides[path] ?? isExpandedByDefault,
     [overrides, isExpandedByDefault],
   );
-  const toggleDir = useCallback(
-    (path: string) =>
-      setOverrides((prev) => ({ ...prev, [path]: !(prev[path] ?? isExpandedByDefault) })),
-    [isExpandedByDefault],
-  );
+  const isDirOpenExplicitly = useCallback((path: string) => overrides[path] === true, [overrides]);
   const setDirOpen = useCallback(
     (path: string, isOpen: boolean) => setOverrides((prev) => ({ ...prev, [path]: isOpen })),
     [],
@@ -160,14 +171,24 @@ export function useTreeFolding(
   }, []);
   const expandAll = useCallback(() => {
     setIsExpandedByDefault(true);
-    setOverrides({});
+    // 個別に開いた gitignore ディレクトリは全展開の対象外なので、開いた記録だけ残す
+    setOverrides((prev) => Object.fromEntries(Object.entries(prev).filter(([, isOpen]) => isOpen)));
   }, []);
 
-  return { isDirOpen, toggleDir, setDirOpen, isExpandedByDefault, collapseAll, expandAll };
+  return {
+    isDirOpen,
+    isDirOpenExplicitly,
+    setDirOpen,
+    isExpandedByDefault,
+    collapseAll,
+    expandAll,
+  };
 }
 
 interface FileTreeProps<T extends FileTreeEntry> {
   files: T[];
+  /** 中身を開いたときに読み込むディレクトリ (gitignore されたもの)。中身が空でも表示する */
+  lazyDirs?: string[];
   folding: TreeFolding;
   selectedPath: string | null;
   /** 省略時は既読表示なし (ファイル閲覧モード) */
@@ -183,8 +204,11 @@ interface FileTreeProps<T extends FileTreeEntry> {
   sort?: TreeSort;
 }
 
+const NO_LAZY_DIRS: string[] = [];
+
 export function FileTree<T extends FileTreeEntry>({
   files,
+  lazyDirs = NO_LAZY_DIRS,
   folding,
   selectedPath,
   viewedPaths,
@@ -194,7 +218,7 @@ export function FileTree<T extends FileTreeEntry>({
   onToggleViewed,
   sort = 'name',
 }: FileTreeProps<T>) {
-  const tree = useMemo(() => buildTree(files, sort), [files, sort]);
+  const tree = useMemo(() => buildTree(files, lazyDirs, sort), [files, lazyDirs, sort]);
   return (
     <div className="w-max min-w-full py-1 text-[13px] leading-6">
       <TreeLevel
@@ -286,7 +310,8 @@ function DirRow<T extends FileTreeEntry>({
   ctx: TreeContext<T>;
 }) {
   const { folding, viewedPaths, onToggleViewed } = ctx;
-  const isOpen = folding.isDirOpen(node.path);
+  // 読み込みが連鎖しないよう、gitignore されたディレクトリは全展開では開かず個別に開いたときだけ開く
+  const isOpen = node.isLazy ? folding.isDirOpenExplicitly(node.path) : folding.isDirOpen(node.path);
   const files = useMemo(() => collectFiles(node), [node]);
   const viewedCount = files.filter((file) => viewedPaths?.has(file.path)).length;
   const isAllViewed = files.length > 0 && viewedCount === files.length;
@@ -315,8 +340,8 @@ function DirRow<T extends FileTreeEntry>({
         )}
         <button
           type="button"
-          className="flex min-w-0 flex-1 items-center gap-1 text-left"
-          onClick={() => folding.toggleDir(node.path)}
+          className={`flex min-w-0 flex-1 items-center gap-1 text-left ${node.isLazy ? 'opacity-50' : ''}`}
+          onClick={() => folding.setDirOpen(node.path, !isOpen)}
         >
           <ChevronIcon isOpen={isOpen} />
           <Icon icon={isOpen ? FOLDER_OPENED_ICON : FOLDER_ICON} className="size-4 shrink-0" aria-hidden />
@@ -366,8 +391,12 @@ function FileRow<T extends FileTreeEntry>({
           onChange={(e) => onToggleViewed([file], e.target.checked)}
         />
       )}
-      <Icon icon={getFileTypeIconName(file.path)} className="size-4 shrink-0" aria-hidden />
-      <span className="flex-1 whitespace-nowrap" title={file.path}>
+      <Icon
+        icon={getFileTypeIconName(file.path)}
+        className={`size-4 shrink-0 ${file.isIgnored ? 'opacity-50' : ''}`}
+        aria-hidden
+      />
+      <span className={`flex-1 whitespace-nowrap ${file.isIgnored ? 'opacity-50' : ''}`} title={file.path}>
         {node.name}
       </span>
       {/* 右端の印は横スクロールしても見えるように貼り付ける (背景は行から受け継ぐ) */}

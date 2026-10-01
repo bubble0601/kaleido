@@ -11,7 +11,12 @@ import {
   type RangeSpec,
 } from '../shared/types.js';
 import type { AppContext } from './context.js';
-import { listDirectoryFiles, listDocumentFiles } from './files/tree.js';
+import {
+  buildRepoFilesResponse,
+  listDirEntries,
+  listDirectoryFiles,
+  listDocumentFiles,
+} from './files/tree.js';
 import { IMAGE_CONTENT_TYPES } from '../shared/documents.js';
 import packageJson from '../../package.json' with { type: 'json' };
 
@@ -162,9 +167,20 @@ export function createApp(ctx: AppContext): Hono {
   });
 
   // ルート配下の全ファイル (Files タブ / Quick Open)。
-  // git ls-files では gitignore されたファイルが見えないため、git 管理下でもディレクトリ走査する
+  // gitignore されたディレクトリは中身を列挙せず、開いたときに /api/files/dir で読む
   app.get('/api/files', async (c) => {
+    if (ctx.gitDiff) {
+      return c.json(buildRepoFilesResponse(await ctx.gitDiff.listRepoFiles(), ctx.config));
+    }
     return c.json(await listDirectoryFiles(ctx.rootDir, ctx.config));
+  });
+
+  app.get('/api/files/dir', zValidator('query', z.object({ path: z.string().min(1) })), async (c) => {
+    try {
+      return c.json(await listDirEntries(ctx.rootDir, c.req.valid('query').path, ctx.config));
+    } catch (error) {
+      return c.json({ error: error instanceof Error ? error.message : String(error) }, 404);
+    }
   });
 
   // Docs タブ用。git の管理状態を見ずに走査するので gitignore されたものも含む

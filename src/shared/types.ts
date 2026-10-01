@@ -78,9 +78,20 @@ export interface MetaResponse {
 }
 
 export interface FilesResponse {
+  /** ルート相対のファイルパス (gitignore されたものも含む) */
   paths: string[];
+  /** paths のうち gitignore されているもの */
+  ignoredPaths: string[];
+  /** gitignore されていて中身を列挙していないディレクトリ。開いたときに /api/files/dir で読む */
+  ignoredDirs: string[];
   /** 件数上限で打ち切られた場合 true */
   isTruncated: boolean;
+}
+
+/** 1 ディレクトリの直下のエントリ (ルート相対パス) */
+export interface DirEntriesResponse {
+  files: string[];
+  dirs: string[];
 }
 
 export interface DocFileMeta {

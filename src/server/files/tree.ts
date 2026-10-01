@@ -1,8 +1,8 @@
-import { readdir, stat } from 'node:fs/promises';
-import { join } from 'node:path';
+import { readdir, realpath, stat } from 'node:fs/promises';
+import { join, sep } from 'node:path';
 
 import { isDocumentPath } from '../../shared/documents.js';
-import type { DocsResponse, FilesResponse } from '../../shared/types.js';
+import type { DirEntriesResponse, DocsResponse, FilesResponse } from '../../shared/types.js';
 import { createExcludeMatcher, type ViewerConfig } from './config.js';
 
 /**
@@ -56,14 +56,65 @@ async function collectFiles(
   return { paths, isTruncated };
 }
 
-/** Files タブ用の一覧。gitignore されたファイルも含む */
+/** 非 git モードのファイル一覧 */
 export async function listDirectoryFiles(
   rootDir: string,
   config: ViewerConfig,
 ): Promise<FilesResponse> {
   const { paths, isTruncated } = await collectFiles(rootDir, config, () => true);
   paths.sort((a, b) => a.localeCompare(b));
-  return { paths, isTruncated };
+  return { paths, ignoredPaths: [], ignoredDirs: [], isTruncated };
+}
+
+/**
+ * git モードのファイル一覧。ls-files の結果に除外設定を適用する。
+ * ls-files はファイル単位で返すので、祖先ディレクトリが除外パターンにマッチするものも落とす
+ */
+export function buildRepoFilesResponse(
+  listing: { paths: string[]; ignoredPaths: string[]; ignoredDirs: string[] },
+  config: ViewerConfig,
+): FilesResponse {
+  const isExcludedSelf = createExcludeMatcher(config.exclude);
+  const isExcluded = (relPath: string) => {
+    const segments = relPath.split('/');
+    return segments.some((_, i) => isExcludedSelf(segments.slice(0, i + 1).join('/')));
+  };
+  const ignoredPaths = listing.ignoredPaths.filter((path) => !isExcluded(path));
+  const paths = [...listing.paths, ...ignoredPaths]
+    .filter((path) => !isExcluded(path))
+    .sort((a, b) => a.localeCompare(b));
+  return {
+    paths: paths.slice(0, config.maxFiles),
+    ignoredPaths,
+    ignoredDirs: listing.ignoredDirs.filter((path) => !isExcluded(path)),
+    isTruncated: paths.length > config.maxFiles,
+  };
+}
+
+/** gitignore されたディレクトリを開いたときに、その直下だけを読む */
+export async function listDirEntries(
+  rootDir: string,
+  relDir: string,
+  config: ViewerConfig,
+): Promise<DirEntriesResponse> {
+  const segments = relDir.split('/');
+  if (segments.some((segment) => segment === '' || segment === '..')) {
+    throw new Error('Invalid directory path');
+  }
+  const abs = await realpath(join(rootDir, relDir));
+  if (!abs.startsWith(`${rootDir}${sep}`)) throw new Error('Directory outside the viewer root');
+
+  const isExcluded = createExcludeMatcher(config.exclude);
+  const files: string[] = [];
+  const dirs: string[] = [];
+  for (const entry of await readdir(abs, { withFileTypes: true })) {
+    const rel = `${relDir}/${entry.name}`;
+    if (isExcluded(rel)) continue;
+    // collectFiles と揃えてシンボリックリンクは辿らない
+    if (entry.isDirectory()) dirs.push(rel);
+    else if (entry.isFile()) files.push(rel);
+  }
+  return { files, dirs };
 }
 
 /**

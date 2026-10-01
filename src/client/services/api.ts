@@ -3,6 +3,7 @@ import type {
   CommentCreateRequest,
   DiffFileMeta,
   DiffResponse,
+  DirEntriesResponse,
   DocsResponse,
   FileContentResponse,
   FilesResponse,
@@ -51,6 +52,9 @@ export const api = {
   getPullDetail: (number: number) => request<PullDetail>(`/api/pulls/${number}`),
 
   getFiles: () => request<FilesResponse>('/api/files'),
+
+  getDirEntries: (path: string) =>
+    request<DirEntriesResponse>(`/api/files/dir?${new URLSearchParams({ path })}`),
 
   getDocs: () => request<DocsResponse>('/api/docs'),
 

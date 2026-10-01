@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 
 import type { DiffFileMeta, RangeSpec } from '../../shared/types';
-import { useAllFiles, useDocFiles, useMeta } from '../hooks/queries';
+import { useAllFiles, useDocFiles, useIgnoredDirEntries, useMeta } from '../hooks/queries';
 import { useUiStore, type DocsSort, type SidebarTab } from '../state/store';
 import { DocsRootSelector, type DocsRootOption } from './DocsRootSelector';
 import { FileTree, useTreeFolding, type FileTreeEntry, type TreeFolding } from './FileTree';
@@ -30,6 +30,8 @@ function collectDocsRoots(docs: { path: string }[]): DocsRootOption[] {
       .sort((a, b) => b.count - a.count || a.path.localeCompare(b.path)),
   ];
 }
+
+const NO_DIRS: string[] = [];
 
 const SECTION_LABELS: Record<SidebarTab, string> = {
   changes: 'Changes',
@@ -78,10 +80,6 @@ export function Sidebar({
   const setDocsSort = useUiStore((state) => state.setDocsSort);
   const allFiles = useAllFiles(tab === 'files');
   const docFiles = useDocFiles(tab === 'docs');
-  const fileEntries = useMemo<FileTreeEntry[]>(
-    () => (allFiles.data?.paths ?? []).map((path) => ({ path })),
-    [allFiles.data],
-  );
   const allDocs = useMemo(() => docFiles.data?.files ?? [], [docFiles.data]);
 
   // Docs の基点ディレクトリ。プロジェクトごとに覚える
@@ -132,6 +130,23 @@ export function Sidebar({
   const docsFolding = useTreeFolding(false, activeDocPath);
   const folding =
     tab === 'changes' ? changesFolding : tab === 'docs' ? docsFolding : filesFolding;
+
+  // gitignore されたディレクトリは中身を後から読み込み、配下も含めて薄く表示する
+  const ignoredDirEntries = useIgnoredDirEntries(
+    allFiles.data?.ignoredDirs ?? NO_DIRS,
+    filesFolding.isDirOpenExplicitly,
+  );
+  const fileEntries = useMemo<FileTreeEntry[]>(() => {
+    const ignoredPaths = new Set(allFiles.data?.ignoredPaths);
+    return [
+      ...(allFiles.data?.paths ?? []).map((path) => ({ path, isIgnored: ignoredPaths.has(path) })),
+      ...ignoredDirEntries.flatMap((entries) => entries.files.map((path) => ({ path, isIgnored: true }))),
+    ];
+  }, [allFiles.data, ignoredDirEntries]);
+  const lazyDirs = useMemo(
+    () => [...(allFiles.data?.ignoredDirs ?? []), ...ignoredDirEntries.flatMap((entries) => entries.dirs)],
+    [allFiles.data, ignoredDirEntries],
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -219,12 +234,13 @@ export function Sidebar({
           )
         ) : allFiles.isLoading ? (
           <Placeholder>Loading…</Placeholder>
-        ) : fileEntries.length === 0 ? (
+        ) : fileEntries.length === 0 && lazyDirs.length === 0 ? (
           <Placeholder>No files</Placeholder>
         ) : (
           <>
             <FileTree
               files={fileEntries}
+              lazyDirs={lazyDirs}
               folding={folding}
               selectedPath={activePath}
               commentCounts={commentCounts}

@@ -95,6 +95,25 @@ export class GitDiff {
     return result;
   }
 
+  /**
+   * tracked + untracked + gitignore されたファイルの一覧。
+   * --directory を付けると、丸ごと ignore されたディレクトリは配下を走査せず `dir/` の 1 件で返る
+   */
+  async listRepoFiles(): Promise<{ paths: string[]; ignoredPaths: string[]; ignoredDirs: string[] }> {
+    const [tracked, untracked, ignored] = await Promise.all([
+      this.git.raw(['ls-files', '-z']),
+      this.git.raw(['ls-files', '--others', '--exclude-standard', '-z']),
+      this.git.raw(['ls-files', '--others', '--ignored', '--exclude-standard', '--directory', '-z']),
+    ]);
+    const split = (out: string) => out.split('\0').filter((path) => path.length > 0);
+    const ignoredEntries = split(ignored);
+    return {
+      paths: [...split(tracked), ...split(untracked)],
+      ignoredPaths: ignoredEntries.filter((path) => !path.endsWith('/')),
+      ignoredDirs: ignoredEntries.filter((path) => path.endsWith('/')).map((path) => path.slice(0, -1)),
+    };
+  }
+
   async validateRef(ref: string): Promise<boolean> {
     if (ref === '.' || ref === 'working' || ref === 'staged') return true;
     try {

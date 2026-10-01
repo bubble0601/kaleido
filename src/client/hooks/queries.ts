@@ -1,6 +1,12 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
 
-import { isWorkingTreeRange, type DiffFileMeta, type FileContentResponse, type RangeSpec } from '../../shared/types';
+import {
+  isWorkingTreeRange,
+  type DiffFileMeta,
+  type DirEntriesResponse,
+  type FileContentResponse,
+  type RangeSpec,
+} from '../../shared/types';
 import { api } from '../services/api';
 
 const TS_FILE_PATTERN = /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs)$/;
@@ -35,6 +41,38 @@ export function useAllFiles(isEnabled = true) {
     queryFn: api.getFiles,
     enabled: isEnabled,
     staleTime: 30_000,
+  });
+}
+
+function dirEntriesKey(path: string) {
+  return ['files', 'dir', path];
+}
+
+// combine は参照が変わると毎回走るため、モジュールレベルに置く
+function combineDirEntries(results: UseQueryResult<DirEntriesResponse>[]): DirEntriesResponse[] {
+  return results.flatMap((result) => (result.data ? [result.data] : []));
+}
+
+/**
+ * gitignore されたディレクトリのうち、開いているものの中身を読む。
+ * 読み込んだ中にあるディレクトリも、開いていれば続けて読む
+ */
+export function useIgnoredDirEntries(rootDirs: string[], isOpen: (path: string) => boolean) {
+  const queryClient = useQueryClient();
+  const openDirs: string[] = [];
+  const queue = rootDirs.filter(isOpen);
+  for (let dir = queue.shift(); dir !== undefined; dir = queue.shift()) {
+    openDirs.push(dir);
+    const data = queryClient.getQueryData<DirEntriesResponse>(dirEntriesKey(dir));
+    if (data) queue.push(...data.dirs.filter(isOpen));
+  }
+  return useQueries({
+    queries: openDirs.map((path) => ({
+      queryKey: dirEntriesKey(path),
+      queryFn: () => api.getDirEntries(path),
+      staleTime: 30_000,
+    })),
+    combine: combineDirEntries,
   });
 }
 
