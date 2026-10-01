@@ -11,7 +11,7 @@ import {
   type RangeSpec,
 } from '../shared/types.js';
 import type { AppContext } from './context.js';
-import { applyExcludes, listDirectoryFiles, listDocumentFiles } from './files/tree.js';
+import { listDirectoryFiles, listDocumentFiles } from './files/tree.js';
 import { IMAGE_CONTENT_TYPES } from '../shared/documents.js';
 import packageJson from '../../package.json' with { type: 'json' };
 
@@ -162,11 +162,8 @@ export function createApp(ctx: AppContext): Hono {
   });
 
   // ルート配下の全ファイル (Files タブ / Quick Open)。
-  // git 管理下なら ls-files (gitignore 済み)、それ以外はディレクトリ走査。
+  // git ls-files では gitignore されたファイルが見えないため、git 管理下でもディレクトリ走査する
   app.get('/api/files', async (c) => {
-    if (ctx.gitDiff) {
-      return c.json(applyExcludes(await ctx.gitDiff.listRepoFiles(), ctx.config));
-    }
     return c.json(await listDirectoryFiles(ctx.rootDir, ctx.config));
   });
 

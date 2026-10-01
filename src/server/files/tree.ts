@@ -56,7 +56,7 @@ async function collectFiles(
   return { paths, isTruncated };
 }
 
-/** 非 git モードのファイル一覧 */
+/** Files タブ用の一覧。gitignore されたファイルも含む */
 export async function listDirectoryFiles(
   rootDir: string,
   config: ViewerConfig,
@@ -89,12 +89,3 @@ export async function listDocumentFiles(
   return { files, isTruncated };
 }
 
-/** git の ls-files 結果にも同じ除外設定を適用する (Files タブの見え方を揃えるため) */
-export function applyExcludes(paths: string[], config: ViewerConfig): FilesResponse {
-  const isExcluded = createExcludeMatcher(config.exclude);
-  const filtered = paths.filter((path) => !isExcluded(path));
-  return {
-    paths: filtered.slice(0, config.maxFiles),
-    isTruncated: filtered.length > config.maxFiles,
-  };
-}
