@@ -1,15 +1,18 @@
 interface PdfPreviewProps {
   /** ルート相対のファイルパス */
   path: string;
+  /** どの断面を見せるか (省略時は working tree) */
+  gitRef?: string;
 }
 
 /**
  * PDF をブラウザ内蔵のビューアで表示する。
- * working tree のファイルを /api/raw から配信したものを読み込む
- * (テキストとして差分を取れないため、過去のコミットの内容は見せない)。
+ * 差分は取れないので、指定された断面の中身を /api/raw から配信して見せる。
  */
-export function PdfPreview({ path }: PdfPreviewProps) {
-  const src = `/api/raw?path=${encodeURIComponent(path)}`;
+export function PdfPreview({ path, gitRef }: PdfPreviewProps) {
+  const src =
+    `/api/raw?path=${encodeURIComponent(path)}` +
+    (gitRef ? `&ref=${encodeURIComponent(gitRef)}` : '');
   return (
     <iframe
       key={src}

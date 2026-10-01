@@ -20,7 +20,6 @@ import {
   BROWSE_RANGE,
   isBrowseRange,
   isFileLevelComment,
-  isWorkingTreeRange,
   pullNumberOfRef,
   type Comment,
   type PullReviewThread,
@@ -317,15 +316,19 @@ export function App() {
   // 過去のコミットの内容を見ているときはプレビューを出さない (ソースと食い違うため)
   const fileKind = selectedFile ? getPreviewKind(selectedFile.path) : null;
   /*
-   * HTML / PDF / 画像は working tree のファイルをサーバーから配信して見せるため、
-   * 過去のコミットの内容を見ているときはプレビューを出さない (中身と食い違うため)。
-   * PDF と画像はテキストを持たないので isEditable を使えず、範囲そのもので判断する。
+   * HTML は working tree のファイルをそのまま配信して見せるため、
+   * 過去のコミットの内容を見ているときはプレビューを出さない (ソースと食い違うため)。
+   * 画像と PDF は断面を指定して取り直せるので、その ref が分かるかどうかで判断する。
    */
-  const isServedFromDisk = fileKind === 'pdf' || fileKind === 'image';
+  const isServedAsBlob = fileKind === 'pdf' || fileKind === 'image';
+  /** 画像・PDF を /api/raw から取るときの断面 (deleted は消える前の内容を見せる) */
+  const rawRef = browsePath
+    ? 'working'
+    : selectedFile?.status === 'deleted'
+      ? diff.data?.resolvedBase
+      : diff.data?.resolvedTarget;
   const previewKind =
-    (fileKind === 'html' && !isEditable) || (isServedFromDisk && !isWorkingTreeRange(contentRange))
-      ? null
-      : fileKind;
+    (fileKind === 'html' && !isEditable) || (isServedAsBlob && !rawRef) ? null : fileKind;
   /** ソースを持たないファイルはプレビューだけを見せる (SVG はテキストなので対象外) */
   const isPreviewOnly = previewKind !== null && !!selectedFile?.isBinary;
   useEffect(() => setPreviewMode(null), [selectedPath, browsePath, setPreviewMode]);
@@ -753,9 +756,9 @@ export function App() {
             {effectivePreviewMode !== 'source' && (
               <div className="min-w-0 flex-1 border-l border-neutral-200 dark:border-neutral-800">
                 {previewKind === 'pdf' ? (
-                  <PdfPreview path={selectedFile.path} />
+                  <PdfPreview path={selectedFile.path} gitRef={rawRef} />
                 ) : previewKind === 'image' ? (
-                  <ImagePreview path={selectedFile.path} />
+                  <ImagePreview path={selectedFile.path} gitRef={rawRef} />
                 ) : previewKind === 'html' ? (
                   <HtmlPreview
                     path={selectedFile.path}

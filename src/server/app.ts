@@ -286,19 +286,20 @@ export function createApp(ctx: AppContext): Hono {
     },
   );
 
-  // Markdown プレビューから参照される画像と、PDF プレビューの中身。
-  // HTML など実行され得る型は返さない (同一オリジンで配信するため)
+  // Markdown プレビューから参照される画像と、画像・PDF プレビューの中身。
+  // HTML など実行され得る型は返さない (同一オリジンで配信するため)。
+  // ref を省くと working tree の内容を返す
   app.get(
     '/api/raw',
-    zValidator('query', z.object({ path: z.string().min(1) })),
+    zValidator('query', z.object({ path: z.string().min(1), ref: z.string().min(1).optional() })),
     async (c) => {
-      const { path } = c.req.valid('query');
+      const { path, ref } = c.req.valid('query');
       const contentType = RAW_CONTENT_TYPES[extensionOf(path)];
       if (!contentType) return c.json({ error: 'Unsupported file type' }, 415);
       const isPdf = contentType === 'application/pdf';
       let buf: Buffer;
       try {
-        buf = await ctx.fileContent.readBlob('working', path);
+        buf = await ctx.fileContent.readBlob(ref ?? 'working', path);
       } catch {
         return c.json({ error: 'File not found' }, 404);
       }
