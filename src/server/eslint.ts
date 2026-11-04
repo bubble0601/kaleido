@@ -15,6 +15,7 @@ const ESLINT_TIMEOUT_MS = 60_000;
 const ESLINT_PROBE_TIMEOUT_MS = 10_000;
 
 const capabilitiesCache = new Map<string, Promise<{ supportsNoWarnIgnored: boolean }>>();
+const runningControllers = new Map<string, AbortController>();
 
 // --no-warn-ignored (ESLint v9 flat config 系のみ対応) を --help と併用して検出。
 // 未対応の eslint はオプション検証で非ゼロ終了する。
@@ -95,14 +96,20 @@ async function runEslintGroup(
     ...absoluteFiles.map((file) => relative(cwd, file)),
   ];
 
+  runningControllers.get(cwd)?.abort();
+  const controller = new AbortController();
+  runningControllers.set(cwd, controller);
+
   try {
     const { stdout } = await execFileAsync(eslintBin, args, {
       cwd,
       maxBuffer: MAX_BUFFER,
       timeout: ESLINT_TIMEOUT_MS,
+      signal: controller.signal,
     });
     return parseStdout(stdout);
   } catch (error) {
+    if (controller.signal.aborted) return [];
     // lint エラーありの場合 exit code 1 で JSON は stdout に出ている
     const stdout = (error as { stdout?: string }).stdout;
     if (typeof stdout === 'string' && stdout.length > 0) {
@@ -116,6 +123,8 @@ async function runEslintGroup(
       `[kaleido] ESLint failed in ${cwd}: ${error instanceof Error ? error.message : 'Unknown error'}`,
     );
     return [];
+  } finally {
+    if (runningControllers.get(cwd) === controller) runningControllers.delete(cwd);
   }
 }
 
