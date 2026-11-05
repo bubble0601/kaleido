@@ -1,3 +1,4 @@
+import { totalmem } from 'node:os';
 import { Worker } from 'node:worker_threads';
 
 import type { DefinitionLocation, Diagnostic, HoverResponse } from '../../shared/types.js';
@@ -8,6 +9,10 @@ interface PendingCall {
 }
 
 const CALL_TIMEOUT_MS = 30_000;
+
+// CLI の --max-old-space-size ではなく resourceLimits で指定するのは、
+// メモリを食うのは TS worker だけでメインスレッドの上限を上げる必要がないため
+const WORKER_HEAP_MB = Math.min(8192, Math.floor(totalmem() / 1024 / 1024 / 2));
 
 // 開発時 (tsx) はこのファイルが .ts のまま動くので worker も .ts + tsx ローダで起動する。
 // ビルド後は dist/cli/index.js にバンドルされるため、dist/server/ts/worker.js を参照する。
@@ -21,18 +26,34 @@ function resolveWorker(): { url: URL; execArgv: string[] } {
 /**
  * worker thread 上の TsService への RPC クライアント。
  * hover / diagnostics は Promise、warmup / invalidateFile は fire-and-forget。
+ * worker が終了した場合 (OOM 等) は次の呼び出しで作り直す。
  */
 export class TsWorkerClient {
-  private worker: Worker;
+  private worker: Worker | null;
   private nextId = 1;
   private pending = new Map<number, PendingCall>();
 
-  constructor(repoRoot: string) {
-    const { url, execArgv } = resolveWorker();
-    this.worker = new Worker(url, { workerData: { repoRoot }, execArgv });
-    this.worker.unref();
+  constructor(private repoRoot: string) {
+    this.worker = this.spawn();
+  }
 
-    this.worker.on('message', (message: { id: number; result?: unknown; error?: string }) => {
+  // 終了済みの Worker への postMessage は例外も出さず無視されるため、必ずこれを経由して送る。
+  // exit 直後に即再起動しないのは、起動直後に再び OOM になる場合の再起動ループを避けるため
+  private getWorker(): Worker {
+    this.worker ??= this.spawn();
+    return this.worker;
+  }
+
+  private spawn(): Worker {
+    const { url, execArgv } = resolveWorker();
+    const worker = new Worker(url, {
+      workerData: { repoRoot: this.repoRoot },
+      execArgv,
+      resourceLimits: { maxOldGenerationSizeMb: WORKER_HEAP_MB },
+    });
+    worker.unref();
+
+    worker.on('message', (message: { id: number; result?: unknown; error?: string }) => {
       const call = this.pending.get(message.id);
       if (!call) return;
       this.pending.delete(message.id);
@@ -42,17 +63,20 @@ export class TsWorkerClient {
         call.resolve(message.result);
       }
     });
-    this.worker.on('error', (error: unknown) => {
+    worker.on('error', (error: unknown) => {
       console.error('[kaleido] ts worker error:', error);
-      const wrapped = error instanceof Error ? error : new Error(String(error));
-      for (const call of this.pending.values()) call.reject(wrapped);
-      this.pending.clear();
+      this.rejectAll(error instanceof Error ? error : new Error(String(error)));
     });
-    this.worker.on('exit', (code) => {
-      const error = new Error(`ts worker exited with code ${code}`);
-      for (const call of this.pending.values()) call.reject(error);
-      this.pending.clear();
+    worker.on('exit', (code) => {
+      if (this.worker === worker) this.worker = null;
+      this.rejectAll(new Error(`ts worker exited with code ${code}`));
     });
+    return worker;
+  }
+
+  private rejectAll(error: Error): void {
+    for (const call of this.pending.values()) call.reject(error);
+    this.pending.clear();
   }
 
   private call<T>(method: string, params: unknown): Promise<T> {
@@ -72,7 +96,7 @@ export class TsWorkerClient {
           reject(reason);
         },
       });
-      this.worker.postMessage({ id, method, params });
+      this.getWorker().postMessage({ id, method, params });
     });
   }
 
@@ -108,10 +132,10 @@ export class TsWorkerClient {
   }
 
   warmup(paths: string[]): void {
-    this.worker.postMessage({ method: 'warmup', params: { paths } });
+    this.getWorker().postMessage({ method: 'warmup', params: { paths } });
   }
 
   invalidateFile(path: string): void {
-    this.worker.postMessage({ method: 'invalidateFile', params: { path } });
+    this.getWorker().postMessage({ method: 'invalidateFile', params: { path } });
   }
 }
