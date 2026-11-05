@@ -8,6 +8,10 @@ import type { DefinitionLocation, Diagnostic, HoverResponse } from '../../shared
 type Ts = typeof tsTypes;
 
 const PROJECT_IDLE_DISPOSE_MS = 10 * 60 * 1000;
+/** 同時に保持する Project 数。monorepo では Project ごとに Program + TypeChecker を抱えるため上限を設ける */
+const MAX_PROJECTS = 3;
+/** Project ごとに保持する extraRoot / overlay の数 */
+const MAX_TRACKED_FILES = 32;
 
 /** path が絶対パスの Location (repo 相対変換前) */
 type AbsoluteLocation = Omit<DefinitionLocation, 'path'> & { path: string };
@@ -59,12 +63,16 @@ export class TsService {
     const configPath = this.ts.findConfigFile(dirname(absPath), this.ts.sys.fileExists, 'tsconfig.json');
     if (!configPath) return null;
     let project = this.projects.get(configPath);
-    if (!project) {
+    if (project) {
+      // Map の挿入順を LRU 順として使うため末尾へ移動する
+      this.projects.delete(configPath);
+    } else {
       project = new Project(this.ts, configPath, this.documentRegistry);
-      this.projects.set(configPath, project);
     }
+    this.projects.set(configPath, project);
     project.touch();
     this.disposeIdleProjects();
+    this.disposeOverflowProjects();
     return project;
   }
 
@@ -136,11 +144,16 @@ export class TsService {
   /** diff 取得後にバックグラウンドで Program を構築しておく (初回 hover の体感改善) */
   warmup(repoRelPaths: string[]): void {
     setImmediate(() => {
+      const warmed = new Set<Project>();
       for (const path of repoRelPaths) {
+        if (warmed.size >= MAX_PROJECTS) break;
         try {
           if (!this.isSupportedFile(path)) continue;
           const absPath = this.toAbsPath(path);
-          this.getProjectFor(absPath)?.ensureProgram();
+          const project = this.getProjectFor(absPath);
+          if (!project) continue;
+          project.ensureProgram();
+          warmed.add(project);
         } catch {
           // warm-up は best effort
         }
@@ -169,6 +182,14 @@ export class TsService {
       }
     }
   }
+
+  private disposeOverflowProjects(): void {
+    for (const [key, project] of this.projects) {
+      if (this.projects.size <= MAX_PROJECTS) break;
+      project.dispose();
+      this.projects.delete(key);
+    }
+  }
 }
 
 function loadTypescript(repoRoot: string): { ts: Ts; source: 'project' | 'bundled' } {
@@ -191,6 +212,8 @@ class Project {
   private rootFiles: Set<string>;
   private extraRoots = new Set<string>();
   private overlays = new Map<string, Overlay>();
+  private nextOverlayVersion = 1;
+  private trackedFiles = new Set<string>();
   private diskVersions = new Map<string, number>();
   private compilerOptions: tsTypes.CompilerOptions;
   private projectDir: string;
@@ -257,8 +280,21 @@ class Project {
   }
 
   private ensureFileInProject(absPath: string): void {
+    this.trackFile(absPath);
     if (!this.rootFiles.has(absPath) && !this.extraRoots.has(absPath)) {
       this.extraRoots.add(absPath);
+    }
+  }
+
+  /** 最近リクエストされたファイル順に extraRoot / overlay を保持し、溢れた古いものを外す */
+  private trackFile(absPath: string): void {
+    this.trackedFiles.delete(absPath);
+    this.trackedFiles.add(absPath);
+    for (const oldest of this.trackedFiles) {
+      if (this.trackedFiles.size <= MAX_TRACKED_FILES) break;
+      this.trackedFiles.delete(oldest);
+      this.extraRoots.delete(oldest);
+      this.overlays.delete(oldest);
     }
   }
 
@@ -268,11 +304,10 @@ class Project {
       if (existing) this.overlays.delete(absPath);
       return;
     }
+    // ファイル単位の連番にしないのは、overlay を外した後に再追加すると
+    // 以前と同じ version 文字列で別内容になり、LanguageService が古い SourceFile を使い回すため
     if (existing?.content !== content) {
-      this.overlays.set(absPath, {
-        content,
-        version: (existing?.version ?? 0) + 1,
-      });
+      this.overlays.set(absPath, { content, version: this.nextOverlayVersion++ });
     }
   }
 
